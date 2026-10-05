@@ -1,0 +1,37 @@
+{
+    "KPlugin": {
+        "Name": "MPRIS Media Controls",
+        "Description": "Control any MPRIS-compatible media player from KRunner",
+        "Icon": "multimedia-player",
+        "Authors": [
+            {
+                "Name": "TomRiddle901"
+            }
+        ],
+        "License": "GPL-3.0-or-later",
+        "Version": "1.0.0",
+        "EnabledByDefault": true
+    },
+
+    "X-Plasma-Runner-Match-Regex": "^(?i)(player|media|mpris)(\\s.*)?$",
+
+    "X-Plasma-Runner-Unique-Results": true,
+
+    "X-Plasma-Runner-Syntaxes": [
+        "player",
+        "player :q:",
+        "media",
+        "media :q:",
+        "mpris",
+        "mpris :q:"
+    ],
+
+    "X-Plasma-Runner-Syntax-Descriptions": [
+        "Show the active MPRIS player",
+        "Search the active MPRIS player",
+        "Show all MPRIS players",
+        "Search all MPRIS players",
+        "Show all MPRIS players",
+        "Search all MPRIS players"
+    ]
+}

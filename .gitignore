@@ -1,0 +1,30 @@
+# Build directory
+build/
+
+# Compiled binaries
+*.so
+*.o
+*.a
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake-build-debug/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+
+# Qt / KDE generated files
+*.qmlc
+*.jsc
+*.qmltypes
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*~
+*.swp
+*.tmp
+%HOME/

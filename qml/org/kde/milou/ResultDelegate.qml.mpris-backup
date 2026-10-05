@@ -1,0 +1,346 @@
+/*
+ * This file is part of the KDE Milou Project
+ * SPDX-FileCopyrightText: 2013-2014 Vishesh Handa <me@vhanda.in>
+ * SPDX-FileCopyrightText: 2015-2016 Kai Uwe Broulik <kde@privat.broulik.de>
+ *
+ * SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+ *
+ */
+
+import QtQuick
+import QtQuick.Layouts
+
+import org.kde.kirigami as Kirigami
+import org.kde.plasma.components 3 as PlasmaComponents3
+import org.kde.milou
+
+PlasmaComponents3.ItemDelegate {
+    id: resultDelegate
+
+    // Necessario per la navigazione interna di Milou
+    property bool reversed: false
+
+    // Dati delle azioni disponibili per il risultato
+    required property var actions
+
+    // Modello del risultato fornito da Milou
+    required property var model
+
+    // Indice del risultato nella lista
+    required property int index
+
+    // Rende la card MPRIS più alta della normale riga di KRunner.
+    implicitHeight: isMpris
+    ? Kirigami.Units.gridUnit * 14
+    : labelWrapper.implicitHeight + Kirigami.Units.mediumSpacing * 2
+
+    // Riconosce i risultati creati dal nostro runner MPRIS.
+    readonly property bool isMpris: model.category === "MPRIS"
+
+    /*
+     * Dall'ID del risultato recuperiamo:
+     *
+     * mpris:servizio|posizione|durata|stato
+     */
+    property var progressData: isMpris
+    ? model.id.split("|")
+    : []
+
+    // Posizione iniziale del brano in microsecondi.
+    property real initialPosition: isMpris && progressData.length > 1
+    ? Number(progressData[1])
+    : 0
+
+    // Durata totale del brano in microsecondi.
+    property real trackDuration: isMpris && progressData.length > 2
+    ? Number(progressData[2])
+    : 0
+
+    // Stato del player: Playing / Paused / Stopped.
+    property string playbackStatus: isMpris && progressData.length > 3
+    ? progressData[3]
+    : ""
+
+    // Posizione mostrata dalla barra.
+    property real currentPosition: initialPosition
+
+    // Momento dal quale iniziamo a calcolare l'avanzamento.
+    property double positionStartTime: Date.now()
+
+    /*
+     * Avanza la barra mentre il brano è in riproduzione.
+     *
+     * Il valore MPRIS è espresso in microsecondi,
+     * mentre Date.now() restituisce millisecondi.
+     */
+    Timer {
+        id: progressTimer
+
+        interval: 250
+        repeat: true
+
+        running: resultDelegate.isMpris &&
+        resultDelegate.playbackStatus === "Playing" &&
+        resultDelegate.trackDuration > 0
+
+        onTriggered: {
+            const elapsed =
+            (Date.now() - resultDelegate.positionStartTime) * 1000
+
+            resultDelegate.currentPosition =
+            Math.min(
+                resultDelegate.initialPosition + elapsed,
+                resultDelegate.trackDuration)
+        }
+    }
+
+    // Converte i microsecondi in mm:ss.
+    function formatTime(microseconds) {
+        if (!microseconds || microseconds < 0)
+            return "00:00"
+
+            const totalSeconds =
+            Math.floor(microseconds / 1000000)
+
+            const minutes =
+            Math.floor(totalSeconds / 60)
+
+            const seconds =
+            totalSeconds % 60
+
+            return (
+                (minutes < 10 ? "0" : "") +
+                minutes +
+                ":" +
+                (seconds < 10 ? "0" : "") +
+                seconds
+            )
+    }
+
+    contentItem: Item {
+        id: labelWrapper
+
+        implicitHeight: labelLayout.implicitHeight
+
+        ColumnLayout {
+            id: labelLayout
+
+            anchors.fill: parent
+
+            anchors.leftMargin: Kirigami.Units.mediumSpacing
+            anchors.rightMargin: Kirigami.Units.mediumSpacing
+            anchors.topMargin: Kirigami.Units.mediumSpacing
+            anchors.bottomMargin: Kirigami.Units.mediumSpacing
+
+            spacing: Kirigami.Units.smallSpacing
+
+            /*
+             * =========================
+             * CARD MPRIS
+             * =========================
+             */
+            Item {
+                visible: resultDelegate.isMpris
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                ColumnLayout {
+                    anchors.fill: parent
+
+                    spacing: Kirigami.Units.smallSpacing
+
+                    // Logo del player.
+                    Kirigami.Icon {
+                        id: playerIcon
+
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 4
+                        Layout.preferredHeight: Kirigami.Units.gridUnit * 4
+
+                        source: model.decoration
+                    }
+
+                    // Titolo della canzone.
+                    PlasmaComponents3.Label {
+                        id: titleLabel
+
+                        Layout.fillWidth: true
+
+                        horizontalAlignment: Text.AlignHCenter
+
+                        text: model.display
+                        font.bold: true
+
+                        elide: Text.ElideRight
+                    }
+
+                    // Artista.
+                    PlasmaComponents3.Label {
+                        id: artistLabel
+
+                        Layout.fillWidth: true
+
+                        horizontalAlignment: Text.AlignHCenter
+
+                        text: model.subtext
+
+                        opacity: 0.75
+
+                        elide: Text.ElideRight
+                    }
+
+                    /*
+                     * Barra di avanzamento.
+                     *
+                     * Viene mostrata solamente quando il player
+                     * fornisce una durata valida.
+                     */
+                    PlasmaComponents3.ProgressBar {
+                        id: progressBar
+
+                        visible: resultDelegate.trackDuration > 0
+
+                        Layout.fillWidth: true
+
+                        Layout.topMargin: Kirigami.Units.smallSpacing
+
+                        from: 0
+                        to: resultDelegate.trackDuration
+                        value: Math.min(
+                            resultDelegate.currentPosition,
+                            resultDelegate.trackDuration)
+                    }
+
+                    // Tempo corrente e durata totale.
+                    RowLayout {
+                        visible: resultDelegate.trackDuration > 0
+
+                        Layout.fillWidth: true
+
+                        PlasmaComponents3.Label {
+                            Layout.fillWidth: true
+
+                            text: resultDelegate.formatTime(
+                                resultDelegate.currentPosition)
+
+                            horizontalAlignment: Text.AlignLeft
+
+                            opacity: 0.7
+                        }
+
+                        PlasmaComponents3.Label {
+                            Layout.fillWidth: true
+
+                            text: resultDelegate.formatTime(
+                                resultDelegate.trackDuration)
+
+                            horizontalAlignment: Text.AlignRight
+
+                            opacity: 0.7
+                        }
+                    }
+
+                    // Spazio elastico prima dei pulsanti.
+                    Item {
+                        Layout.fillHeight: true
+                    }
+
+                    /*
+                     * =========================
+                     * AZIONI MPRIS
+                     * =========================
+                     */
+                    Row {
+                        id: mprisActionsRow
+
+                        Layout.alignment: Qt.AlignHCenter
+
+                        spacing: Kirigami.Units.largeSpacing
+
+                        Repeater {
+                            model: resultDelegate.actionList
+
+                            delegate: PlasmaComponents3.ToolButton {
+                                required property var modelData
+                                required property int index
+
+                                icon.name: modelData.iconSource
+                                text: modelData.text
+
+                                display: PlasmaComponents3.AbstractButton.IconOnly
+
+                                onClicked: {
+                                    resultDelegate.runAction(index)
+                                }
+
+                                PlasmaComponents3.ToolTip {
+                                    text: modelData.text
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            /*
+             * =========================
+             * RISULTATI NORMALI
+             * =========================
+             */
+            Item {
+                visible: !resultDelegate.isMpris
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                RowLayout {
+                    anchors.fill: parent
+
+                    spacing: Kirigami.Units.mediumSpacing
+
+                    Kirigami.Icon {
+                        id: typePixmap
+
+                        visible: source !== ""
+
+                        Layout.preferredWidth: Kirigami.Units.iconSizes.medium
+                        Layout.preferredHeight: Kirigami.Units.iconSizes.medium
+
+                        source: model.decoration
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+
+                        spacing: 0
+
+                        PlasmaComponents3.Label {
+                            id: displayLabel
+
+                            Layout.fillWidth: true
+
+                            text: model.display
+
+                            elide: Text.ElideRight
+                        }
+
+                        PlasmaComponents3.Label {
+                            id: subtextLabel
+
+                            Layout.fillWidth: true
+
+                            visible: text.length > 0
+
+                            text: model.subtext
+
+                            opacity: 0.7
+
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
