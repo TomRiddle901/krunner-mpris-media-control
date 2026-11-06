@@ -4,7 +4,6 @@
 #include <QComboBox>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
-#include <QDBusArgument>
 #include <QDBusInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
@@ -151,7 +150,7 @@ MediaController::MediaController(QWidget *parent)
         QStringLiteral("/MediaController"),
         QStringLiteral("org.tommaso.MprisMediaController"),
         this,
-        QDBusConnection::ExportAllSlots);
+        QDBusConnection::ExportScriptableSlots);
 
     setWindowTitle(QStringLiteral("MPRIS Media Controller"));
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);

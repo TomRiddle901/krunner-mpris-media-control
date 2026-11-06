@@ -19,7 +19,8 @@ public:
     explicit MediaController(QWidget *parent = nullptr);
 
 public Q_SLOTS:
-    void toggleVisibility();
+Q_SCRIPTABLE
+void toggleVisibility();
 
 protected:
     bool event(QEvent *event) override;
