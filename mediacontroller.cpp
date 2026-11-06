@@ -9,6 +9,7 @@
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QDBusVariant>
+#include <QDebug>
 #include <QEvent>
 #include <QFile>
 #include <QFileInfo>
@@ -402,6 +403,11 @@ void MediaController::updatePlayerView()
         firstString(data.value("xesam:album")).isEmpty()
             ? firstString(data.value("xesam:albumArtist"))
             : firstString(data.value("xesam:album"));
+    qWarning() << "metadata" << data.keys()
+               << data.value("xesam:artist").userType()
+               << data.value("xesam:album").userType()
+               << data.value("xesam:url").userType()
+               << artist << album;
     if (artist.isEmpty() || album.isEmpty()) {
         const auto fileMetadata = fileAudioMetadata(data);
         if (artist.isEmpty())
