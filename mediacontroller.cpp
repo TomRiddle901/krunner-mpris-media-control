@@ -8,6 +8,7 @@
 #include <QDBusInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
+#include <QDBusVariant>
 #include <QEvent>
 #include <QFile>
 #include <QHBoxLayout>
@@ -62,6 +63,10 @@ QStringList mprisServices()
 
 QString firstString(const QVariant &value)
 {
+    if (value.userType() == qMetaTypeId<QDBusVariant>()) {
+        return firstString(value.value<QDBusVariant>().variant());
+    }
+
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
         const QStringList values = qdbus_cast<QStringList>(value);
 
