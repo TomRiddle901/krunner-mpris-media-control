@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2.0.0] - 2026-11-06
+
+### Changed
+
+- Replaced the KRunner plugin with a standalone Qt Widgets application.
+- Removed the KRunner, Milou and Plasma environment integration.
+- Added a tray-resident controller with `--toggle` support.
+
+### Added
+
+- Player selection for multiple MPRIS-compatible media players.
+- Previous, play/pause and next playback controls.
+- Clickable and draggable playback position slider.
+- Automatic playback information updates.
+
 ## [1.0.1] - 2026-11-06
 
 ### Added
