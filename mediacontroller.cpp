@@ -138,10 +138,23 @@ QString firstString(const QVariant &value)
         return firstString(unwrapped);
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        const QDBusArgument argument = value.value<QDBusArgument>();
-        const QStringList values = qdbus_cast<QStringList>(argument);
-        if (!values.isEmpty())
-            return values.first();
+        QDBusArgument argument = value.value<QDBusArgument>();
+        if (argument.currentType() == QDBusArgument::BasicType) {
+            QString result;
+            argument >> result;
+            return result;
+        }
+
+        if (argument.currentType() == QDBusArgument::ArrayType) {
+            argument.beginArray();
+            if (!argument.atEnd()) {
+                QString result;
+                argument >> result;
+                argument.endArray();
+                return result;
+            }
+            argument.endArray();
+        }
     }
 
     if (value.canConvert<QStringList>()) {
