@@ -11,6 +11,7 @@
 #include <QDBusVariant>
 #include <QEvent>
 #include <QFile>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHash>
 #include <QImage>
@@ -168,9 +169,11 @@ QString firstString(const QVariant &value)
         const QVariantList values = value.toList();
 
         if (!values.isEmpty()) {
-            const QString result = firstString(values.first());
-            if (!result.isEmpty())
-                return result;
+            for (const QVariant &item : values) {
+                const QString result = firstString(item);
+                if (!result.isEmpty())
+                    return result;
+            }
         }
     }
 
@@ -179,7 +182,10 @@ QString firstString(const QVariant &value)
 
 QPair<QString, QString> fileAudioMetadata(const QVariantMap &data)
 {
-    const QUrl url(firstString(data.value(QStringLiteral("xesam:url"))));
+    QString urlValue = firstString(data.value(QStringLiteral("xesam:url")));
+    if (urlValue.isEmpty())
+        urlValue = data.value(QStringLiteral("xesam:url")).toString();
+    const QUrl url(urlValue);
     if (!url.isLocalFile())
         return {};
 
@@ -207,9 +213,15 @@ QPair<QString, QString> fileAudioMetadata(const QVariantMap &data)
             .value(QStringLiteral("format"))
             .toObject();
     const QJsonObject tags = format.value(QStringLiteral("tags")).toObject();
-    const QPair<QString, QString> result{
+    QPair<QString, QString> result{
         tags.value(QStringLiteral("artist")).toString(),
         tags.value(QStringLiteral("album")).toString()};
+    if (result.first.isEmpty() || result.second.isEmpty()) {
+        const QString baseName = QFileInfo(filePath).completeBaseName();
+        const int separator = baseName.indexOf(QStringLiteral(" - "));
+        if (separator > 0 && result.first.isEmpty())
+            result.first = baseName.left(separator);
+    }
     cache.insert(filePath, result);
     return result;
 }
