@@ -125,7 +125,7 @@ QString firstString(const QVariant &value)
     }
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        const QDBusArgument argument = value.value<QDBusArgument>();
+        QDBusArgument argument = value.value<QDBusArgument>();
         if (argument.currentType() == QDBusArgument::BasicType) {
             QString result;
             argument >> result;
