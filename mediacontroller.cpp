@@ -72,6 +72,12 @@ QString firstString(const QVariant &value)
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
         const QDBusArgument argument = value.value<QDBusArgument>();
+        QStringList values;
+        argument >> values;
+
+        if (!values.isEmpty())
+            return values.first();
+
         QString result;
 
         if (argument.currentType() == QDBusArgument::ArrayType) {
