@@ -63,25 +63,47 @@ QStringList mprisServices()
 
 QString firstString(const QVariant &value)
 {
+    if (!value.isValid())
+        return {};
+
     if (value.userType() == qMetaTypeId<QDBusVariant>()) {
         return firstString(value.value<QDBusVariant>().variant());
     }
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        const QStringList values = qdbus_cast<QStringList>(value);
+        const QDBusArgument argument = value.value<QDBusArgument>();
+        QString result;
 
-        if (!values.isEmpty())
-            return values.first();
-    } else if (value.canConvert<QStringList>()) {
+        if (argument.currentType() == QDBusArgument::ArrayType) {
+            argument.beginArray();
+            while (!argument.atEnd()) {
+                QString item;
+                argument >> item;
+                if (result.isEmpty())
+                    result = item;
+            }
+            argument.endArray();
+        }
+
+        if (!result.isEmpty())
+            return result;
+    }
+
+    if (value.canConvert<QStringList>()) {
         const QStringList values = value.toStringList();
 
         if (!values.isEmpty())
             return values.first();
-    } else if (value.canConvert<QVariantList>()) {
+    }
+
+    if (value.canConvert<QVariantList>()) {
         const QVariantList values = value.toList();
 
-        if (!values.isEmpty())
-            return values.first().toString();
+        if (!values.isEmpty()) {
+            const QString result = firstString(values.first());
+            if (!result.isEmpty())
+                return result;
+        }
     }
 
     return value.toString();

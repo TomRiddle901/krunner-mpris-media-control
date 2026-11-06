@@ -54,7 +54,13 @@ The executable is installed as:
 
 ## Usage
 
-Start the controller:
+Start the controller directly from the build directory:
+
+```bash
+./build/mpris_media_controller
+```
+
+After local installation, start the controller with:
 
 ```bash
 mpris_media_controller
