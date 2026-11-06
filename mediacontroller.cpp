@@ -34,9 +34,21 @@ constexpr auto kPlayerInterface = "org.mpris.MediaPlayer2.Player";
 constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr auto kPropertiesPath = "/org/mpris/MediaPlayer2";
 
-QVariantMap metadata(const QDBusInterface &player)
+QVariantMap metadata(const QString &service)
 {
-    return player.property("Metadata").toMap();
+    QDBusInterface properties(service, kPropertiesPath,
+                              kPropertiesInterface,
+                              QDBusConnection::sessionBus());
+    const QDBusReply<QDBusVariant> reply =
+        properties.call(QStringLiteral("Get"),
+                        QString::fromLatin1(kPlayerInterface),
+                        QStringLiteral("Metadata"));
+
+    if (!reply.isValid())
+        return {};
+
+    const QVariant metadata = reply.value().variant();
+    return metadata.toMap();
 }
 
 QStringList mprisServices()
@@ -282,7 +294,7 @@ void MediaController::updatePlayerView()
 
     QDBusInterface player(service, kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
-    const QVariantMap data = metadata(player);
+    const QVariantMap data = metadata(service);
     const QString status = player.property("PlaybackStatus").toString();
     const qint64 position = player.property("Position").toLongLong();
     const qint64 duration = data.value("mpris:length").toLongLong();
@@ -422,7 +434,7 @@ void MediaController::seekTo(int position)
 
     QDBusInterface player(currentService(), kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
-    const QVariantMap data = metadata(player);
+    const QVariantMap data = metadata(currentService());
     const qint64 duration = data.value("mpris:length").toLongLong();
     const QVariant trackId = data.value("mpris:trackid");
 
