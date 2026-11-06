@@ -12,9 +12,13 @@ class QTimer;
 class MediaController : public QMainWindow
 {
     Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.tommaso.MprisMediaController")
 
 public:
     explicit MediaController(QWidget *parent = nullptr);
+
+public Q_SLOTS:
+    void toggleVisibility();
 
 protected:
     bool event(QEvent *event) override;

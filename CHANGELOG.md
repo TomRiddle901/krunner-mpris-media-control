@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+---
+
+## [1.0.1] - 2026-11-06
+
+### Added
+- Standalone Qt Widgets media controller.
+- Player selection for multiple MPRIS-compatible media players.
+- Previous, play/pause and next playback controls.
+- Clickable and draggable playback position slider.
+- Automatic playback information updates.
+- System tray integration.
+- Popup hiding when focus is lost.
+- `--toggle` command for showing or hiding the controller.
+- Support for building and installing the standalone media controller with CMake.
+
 ## [1.0.0] - 2026-10-05
 
 ### Added

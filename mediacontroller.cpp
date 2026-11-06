@@ -63,6 +63,12 @@ QString firstString(const QVariant &value)
 MediaController::MediaController(QWidget *parent)
     : QMainWindow(parent)
 {
+    QDBusConnection::sessionBus().registerObject(
+        QStringLiteral("/MediaController"),
+        QStringLiteral("org.tommaso.MprisMediaController"),
+        this,
+        QDBusConnection::ExportAllSlots);
+
     setWindowTitle(QStringLiteral("MPRIS Media Controller"));
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_QuitOnClose, false);
@@ -263,4 +269,12 @@ void MediaController::showController()
     show();
     raise();
     activateWindow();
+}
+
+void MediaController::toggleVisibility()
+{
+    if (isVisible())
+        hide();
+    else
+        showController();
 }
