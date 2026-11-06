@@ -8,6 +8,7 @@
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusReply>
+#include <QEventLoop>
 #include <QIcon>
 #include <QRegularExpression>
 #include <QTimer>
@@ -414,18 +415,25 @@ void MprisRunner::run(
             QStringLiteral("PlayPause"));
     }
 
-    // Richiede una nuova ricerca mantenendo aperta la finestra di KRunner.
-    QTimer::singleShot(refreshDelay, [context]() {
-        const QString query = context.query();
-        const QString refreshedQuery =
-            query.endsWith(QLatin1Char(' '))
-                ? query.chopped(1)
-                : query + QLatin1Char(' ');
+    // Attende l'aggiornamento dei metadata prima di restituire il contesto.
+    QEventLoop refreshLoop;
+    QTimer::singleShot(
+        refreshDelay,
+        &refreshLoop,
+        &QEventLoop::quit);
+    refreshLoop.exec();
 
-        context.requestQueryStringUpdate(
-            refreshedQuery,
-            refreshedQuery.length());
-    });
+    // La richiesta viene letta da KRunner al termine di run(). Cambiare solo
+    // lo spazio finale forza il ricalcolo senza chiudere la finestra.
+    const QString query = context.query();
+    const QString refreshedQuery =
+        query.endsWith(QLatin1Char(' '))
+            ? query.chopped(1)
+            : query + QLatin1Char(' ');
+
+    context.requestQueryStringUpdate(
+        refreshedQuery,
+        refreshedQuery.length());
 }
 
 K_PLUGIN_CLASS_WITH_JSON(
