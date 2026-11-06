@@ -414,13 +414,17 @@ void MprisRunner::run(
             QStringLiteral("PlayPause"));
     }
 
-    const QString query = context.query();
-
     // Richiede una nuova ricerca mantenendo aperta la finestra di KRunner.
-    QTimer::singleShot(refreshDelay, [context, query]() {
+    QTimer::singleShot(refreshDelay, [context]() {
+        const QString query = context.query();
+        const QString refreshedQuery =
+            query.endsWith(QLatin1Char(' '))
+                ? query.chopped(1)
+                : query + QLatin1Char(' ');
+
         context.requestQueryStringUpdate(
-            query,
-            query.length());
+            refreshedQuery,
+            refreshedQuery.length());
     });
 }
 
