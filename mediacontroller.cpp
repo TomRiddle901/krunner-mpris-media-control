@@ -8,13 +8,19 @@
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QEvent>
+#include <QFile>
 #include <QHBoxLayout>
+#include <QImage>
+#include <QIcon>
 #include <QLabel>
 #include <QMenu>
+#include <QPixmap>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSlider>
 #include <QSystemTrayIcon>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QVariantMap>
 
@@ -82,6 +88,8 @@ MediaController::MediaController(QWidget *parent)
     m_playerSelector = new QComboBox(central);
     m_titleLabel = new QLabel(central);
     m_artistLabel = new QLabel(central);
+    m_artworkLabel = new QLabel(central);
+    m_playerIconLabel = new QLabel(central);
     m_timeLabel = new QLabel(central);
     m_positionSlider = new QSlider(Qt::Horizontal, central);
     m_previousButton = new QPushButton(QStringLiteral("Previous"), central);
@@ -90,6 +98,12 @@ MediaController::MediaController(QWidget *parent)
 
     m_titleLabel->setAlignment(Qt::AlignCenter);
     m_artistLabel->setAlignment(Qt::AlignCenter);
+    m_artworkLabel->setFixedSize(180, 180);
+    m_artworkLabel->setAlignment(Qt::AlignCenter);
+    m_artworkLabel->setStyleSheet(
+        QStringLiteral("background: palette(alternate-base); border-radius: 8px;"));
+    m_playerIconLabel->setFixedSize(48, 48);
+    m_playerIconLabel->setAlignment(Qt::AlignCenter);
     m_timeLabel->setAlignment(Qt::AlignCenter);
     m_titleLabel->setStyleSheet(QStringLiteral("font-size: 18px; font-weight: 600;"));
     m_artistLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
@@ -102,9 +116,19 @@ MediaController::MediaController(QWidget *parent)
     buttons->addWidget(m_nextButton);
     buttons->addStretch();
 
-    mainLayout->addWidget(m_playerSelector);
-    mainLayout->addWidget(m_titleLabel);
-    mainLayout->addWidget(m_artistLabel);
+    auto *detailsLayout = new QVBoxLayout;
+    auto *playerHeader = new QHBoxLayout;
+    playerHeader->addWidget(m_playerIconLabel);
+    playerHeader->addWidget(m_playerSelector, 1);
+    detailsLayout->addLayout(playerHeader);
+    detailsLayout->addWidget(m_titleLabel);
+    detailsLayout->addWidget(m_artistLabel);
+
+    auto *contentLayout = new QHBoxLayout;
+    contentLayout->addWidget(m_artworkLabel);
+    contentLayout->addLayout(detailsLayout, 1);
+
+    mainLayout->addLayout(contentLayout);
     mainLayout->addWidget(m_positionSlider);
     mainLayout->addWidget(m_timeLabel);
     mainLayout->addLayout(buttons);
@@ -195,6 +219,9 @@ void MediaController::updatePlayerView()
     if (service.isEmpty()) {
         m_titleLabel->setText(QStringLiteral("No MPRIS player found"));
         m_artistLabel->clear();
+        m_artworkLabel->setPixmap({});
+        m_artworkLabel->setText(QStringLiteral("No artwork"));
+        m_playerIconLabel->setPixmap({});
         m_timeLabel->clear();
         m_playPauseButton->setEnabled(false);
         m_previousButton->setEnabled(false);
@@ -211,6 +238,9 @@ void MediaController::updatePlayerView()
 
     m_titleLabel->setText(firstString(data.value("xesam:title")));
     m_artistLabel->setText(firstString(data.value("xesam:artist")));
+    m_playerIconLabel->setPixmap(
+        playerIcon(service).pixmap(40, 40));
+    updateArtwork(data);
     m_playPauseButton->setText(status == QStringLiteral("Playing")
                                     ? QStringLiteral("Pause")
                                     : QStringLiteral("Play"));
@@ -224,6 +254,63 @@ void MediaController::updatePlayerView()
     m_playPauseButton->setEnabled(true);
     m_previousButton->setEnabled(true);
     m_nextButton->setEnabled(true);
+}
+
+void MediaController::updateArtwork(const QVariantMap &data)
+{
+    QPixmap artwork;
+    const QString artUrlValue =
+        data.value(QStringLiteral("mpris:artUrl")).toString();
+    const QUrl artUrl(artUrlValue);
+
+    if (artUrl.isLocalFile())
+        artwork.load(artUrl.toLocalFile());
+    else if (artUrlValue.startsWith(QStringLiteral("data:"))) {
+        const qsizetype separator = artUrlValue.indexOf(QLatin1Char(','));
+
+        if (separator > 0) {
+            const QString header = artUrlValue.left(separator);
+            const QString payload = artUrlValue.mid(separator + 1);
+            const QByteArray imageData =
+                header.contains(QStringLiteral(";base64"),
+                               Qt::CaseInsensitive)
+                    ? QByteArray::fromBase64(payload.toLatin1())
+                    : QUrl::fromPercentEncoding(
+                          payload.toLatin1()).toUtf8();
+
+            artwork.loadFromData(imageData);
+        }
+    }
+
+    if (artwork.isNull()) {
+        m_artworkLabel->setPixmap(
+            QIcon::fromTheme(QStringLiteral("multimedia-player"))
+                .pixmap(96, 96));
+        m_artworkLabel->setText(QString());
+        return;
+    }
+
+    m_artworkLabel->setText(QString());
+    m_artworkLabel->setPixmap(
+        artwork.scaled(
+            m_artworkLabel->size(),
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation));
+}
+
+QIcon MediaController::playerIcon(const QString &service) const
+{
+    QString iconName =
+        service.mid(QStringLiteral("org.mpris.MediaPlayer2.").length())
+            .toLower();
+    iconName.replace(
+        QRegularExpression(QStringLiteral("[^a-z0-9_-]")),
+        QString());
+
+    const QIcon icon = QIcon::fromTheme(iconName);
+    return icon.isNull()
+        ? QIcon::fromTheme(QStringLiteral("multimedia-player"))
+        : icon;
 }
 
 void MediaController::callPlayer(const QString &method)
