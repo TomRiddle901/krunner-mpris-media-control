@@ -63,6 +63,11 @@ QVariantMap metadata(const QDBusInterface &player)
     if (value.canConvert<QVariantMap>())
         return value.toMap();
 
+    if (value.userType() == qMetaTypeId<QDBusArgument>()) {
+        const QDBusArgument argument = value.value<QDBusArgument>();
+        return qdbus_cast<QVariantMap>(argument);
+    }
+
     return {};
 }
 
@@ -98,23 +103,10 @@ QString firstString(const QVariant &value)
         return firstString(unwrapped);
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        QDBusArgument argument = value.value<QDBusArgument>();
-        if (argument.currentType() == QDBusArgument::BasicType) {
-            QString result;
-            argument >> result;
-            return result;
-        }
-
-        if (argument.currentType() == QDBusArgument::ArrayType) {
-            argument.beginArray();
-            if (!argument.atEnd()) {
-                QString result;
-                argument >> result;
-                argument.endArray();
-                return result;
-            }
-            argument.endArray();
-        }
+        const QDBusArgument argument = value.value<QDBusArgument>();
+        const QStringList values = qdbus_cast<QStringList>(argument);
+        if (!values.isEmpty())
+            return values.first();
     }
 
     if (value.canConvert<QStringList>()) {
