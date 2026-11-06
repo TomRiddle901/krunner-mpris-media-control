@@ -65,9 +65,12 @@ PlasmaComponents3.ItemDelegate {
     property var mprisProgressData: []
 
     // ID del risultato MPRIS, aggiornato quando KRunner sostituisce il match.
-    property string mprisMatchId: isMpris
-    ? String(model.id || "")
-    : ""
+    property string mprisMatchId: {
+        if (!isMpris)
+            return ""
+
+        return String(model.matchId || model.id || "")
+    }
 
     // Formatta i microsecondi nel formato mm:ss.
     function formatTime(microseconds) {
@@ -97,13 +100,15 @@ PlasmaComponents3.ItemDelegate {
             const position = Number(parts[1])
             const duration = Number(parts[2])
 
-            if (!isNaN(position))
+            if (!isNaN(position)) {
                 mprisPosition = position
+            }
 
-                if (!isNaN(duration))
-                    mprisDuration = duration
+            if (!isNaN(duration)) {
+                mprisDuration = duration
+            }
 
-                    mprisStatus = parts[3]
+            mprisStatus = parts[3]
         } else {
             mprisPosition = 0
             mprisDuration = 0
@@ -133,6 +138,7 @@ PlasmaComponents3.ItemDelegate {
 
     onMprisProgressDataChanged: updateProgressData()
     onMprisMatchIdChanged: updateProgressData()
+    onModelChanged: updateProgressData()
 
     Component.onCompleted: updateProgressData()
 
