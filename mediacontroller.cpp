@@ -63,9 +63,7 @@ QStringList mprisServices()
 QString firstString(const QVariant &value)
 {
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        const QDBusArgument argument = value.value<QDBusArgument>();
-        QStringList values;
-        argument >> values;
+        const QStringList values = qdbus_cast<QStringList>(value);
 
         if (!values.isEmpty())
             return values.first();
