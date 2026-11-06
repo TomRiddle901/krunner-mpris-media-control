@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
+#include <QDBusArgument>
 #include <QDBusInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
@@ -37,6 +38,14 @@ constexpr auto kPlayerInterface = "org.mpris.MediaPlayer2.Player";
 constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr auto kPropertiesPath = "/org/mpris/MediaPlayer2";
 
+QVariant unwrapDbusValue(const QVariant &value)
+{
+    if (value.userType() == qMetaTypeId<QDBusVariant>())
+        return value.value<QDBusVariant>().variant();
+
+    return value;
+}
+
 QVariantMap metadata(const QDBusInterface &player)
 {
     QDBusInterface properties(player.service(), kPropertiesPath,
@@ -50,7 +59,11 @@ QVariantMap metadata(const QDBusInterface &player)
     if (!reply.isValid())
         return {};
 
-    return reply.value().variant().toMap();
+    const QVariant value = unwrapDbusValue(reply.value().variant());
+    if (value.canConvert<QVariantMap>())
+        return value.toMap();
+
+    return {};
 }
 
 QStringList mprisServices()
@@ -80,8 +93,28 @@ QString firstString(const QVariant &value)
     if (!value.isValid())
         return {};
 
-    if (value.userType() == qMetaTypeId<QDBusVariant>()) {
-        return firstString(value.value<QDBusVariant>().variant());
+    const QVariant unwrapped = unwrapDbusValue(value);
+    if (unwrapped != value)
+        return firstString(unwrapped);
+
+    if (value.userType() == qMetaTypeId<QDBusArgument>()) {
+        QDBusArgument argument = value.value<QDBusArgument>();
+        if (argument.currentType() == QDBusArgument::BasicType) {
+            QString result;
+            argument >> result;
+            return result;
+        }
+
+        if (argument.currentType() == QDBusArgument::ArrayType) {
+            argument.beginArray();
+            if (!argument.atEnd()) {
+                QString result;
+                argument >> result;
+                argument.endArray();
+                return result;
+            }
+            argument.endArray();
+        }
     }
 
     if (value.canConvert<QStringList>()) {
