@@ -34,13 +34,14 @@ private:
     QString formatTime(qint64 microseconds) const;
     void showController();
     void updateArtwork(const QVariantMap &data);
+    QString technicalMetadata(const QVariantMap &data) const;
     QIcon playerIcon(const QString &service) const;
 
     QComboBox *m_playerSelector = nullptr;
     QLabel *m_titleLabel = nullptr;
     QLabel *m_artistLabel = nullptr;
+    QLabel *m_technicalLabel = nullptr;
     QLabel *m_artworkLabel = nullptr;
-    QLabel *m_playerIconLabel = nullptr;
     QLabel *m_timeLabel = nullptr;
     QSlider *m_positionSlider = nullptr;
     QPushButton *m_previousButton = nullptr;

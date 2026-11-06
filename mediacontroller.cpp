@@ -20,6 +20,7 @@
 #include <QSlider>
 #include <QSystemTrayIcon>
 #include <QTimer>
+#include <QStringList>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QVariantMap>
@@ -88,8 +89,8 @@ MediaController::MediaController(QWidget *parent)
     m_playerSelector = new QComboBox(central);
     m_titleLabel = new QLabel(central);
     m_artistLabel = new QLabel(central);
+    m_technicalLabel = new QLabel(central);
     m_artworkLabel = new QLabel(central);
-    m_playerIconLabel = new QLabel(central);
     m_timeLabel = new QLabel(central);
     m_positionSlider = new QSlider(Qt::Horizontal, central);
     m_previousButton = new QPushButton(QStringLiteral("Previous"), central);
@@ -98,15 +99,17 @@ MediaController::MediaController(QWidget *parent)
 
     m_titleLabel->setAlignment(Qt::AlignCenter);
     m_artistLabel->setAlignment(Qt::AlignCenter);
+    m_technicalLabel->setAlignment(Qt::AlignCenter);
     m_artworkLabel->setFixedSize(180, 180);
     m_artworkLabel->setAlignment(Qt::AlignCenter);
     m_artworkLabel->setStyleSheet(
         QStringLiteral("background: palette(alternate-base); border-radius: 8px;"));
-    m_playerIconLabel->setFixedSize(48, 48);
-    m_playerIconLabel->setAlignment(Qt::AlignCenter);
+    m_playerSelector->setIconSize(QSize(20, 20));
+    m_playerSelector->setMaximumWidth(240);
     m_timeLabel->setAlignment(Qt::AlignCenter);
     m_titleLabel->setStyleSheet(QStringLiteral("font-size: 18px; font-weight: 600;"));
     m_artistLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    m_technicalLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
     m_positionSlider->setRange(0, 1000);
 
     auto *buttons = new QHBoxLayout;
@@ -117,17 +120,15 @@ MediaController::MediaController(QWidget *parent)
     buttons->addStretch();
 
     auto *detailsLayout = new QVBoxLayout;
-    auto *playerHeader = new QHBoxLayout;
-    playerHeader->addWidget(m_playerIconLabel);
-    playerHeader->addWidget(m_playerSelector, 1);
-    detailsLayout->addLayout(playerHeader);
     detailsLayout->addWidget(m_titleLabel);
     detailsLayout->addWidget(m_artistLabel);
+    detailsLayout->addWidget(m_technicalLabel);
 
     auto *contentLayout = new QHBoxLayout;
     contentLayout->addWidget(m_artworkLabel);
     contentLayout->addLayout(detailsLayout, 1);
 
+    mainLayout->addWidget(m_playerSelector, 0, Qt::AlignLeft);
     mainLayout->addLayout(contentLayout);
     mainLayout->addWidget(m_positionSlider);
     mainLayout->addWidget(m_timeLabel);
@@ -194,7 +195,7 @@ void MediaController::refreshPlayers()
     for (const QString &service : services) {
         const QString name =
             service.mid(QStringLiteral("org.mpris.MediaPlayer2.").length());
-        m_playerSelector->addItem(name, service);
+        m_playerSelector->addItem(playerIcon(service), name, service);
     }
 
     const int selectedIndex = m_playerSelector->findData(selected);
@@ -219,9 +220,9 @@ void MediaController::updatePlayerView()
     if (service.isEmpty()) {
         m_titleLabel->setText(QStringLiteral("No MPRIS player found"));
         m_artistLabel->clear();
+        m_technicalLabel->clear();
         m_artworkLabel->setPixmap({});
         m_artworkLabel->setText(QStringLiteral("No artwork"));
-        m_playerIconLabel->setPixmap({});
         m_timeLabel->clear();
         m_playPauseButton->setEnabled(false);
         m_previousButton->setEnabled(false);
@@ -235,11 +236,16 @@ void MediaController::updatePlayerView()
     const QString status = player.property("PlaybackStatus").toString();
     const qint64 position = player.property("Position").toLongLong();
     const qint64 duration = data.value("mpris:length").toLongLong();
+    const QString artist = firstString(data.value("xesam:artist"));
+    const QString album = firstString(data.value("xesam:album"));
 
     m_titleLabel->setText(firstString(data.value("xesam:title")));
-    m_artistLabel->setText(firstString(data.value("xesam:artist")));
-    m_playerIconLabel->setPixmap(
-        playerIcon(service).pixmap(40, 40));
+    if (!artist.isEmpty() && !album.isEmpty())
+        m_artistLabel->setText(
+            artist + QStringLiteral(" · ") + album);
+    else
+        m_artistLabel->setText(artist.isEmpty() ? album : artist);
+    m_technicalLabel->setText(technicalMetadata(data));
     updateArtwork(data);
     m_playPauseButton->setText(status == QStringLiteral("Playing")
                                     ? QStringLiteral("Pause")
@@ -254,6 +260,41 @@ void MediaController::updatePlayerView()
     m_playPauseButton->setEnabled(true);
     m_previousButton->setEnabled(true);
     m_nextButton->setEnabled(true);
+}
+
+QString MediaController::technicalMetadata(const QVariantMap &data) const
+{
+    QStringList values;
+
+    const QString audioCodec =
+        firstString(data.value(QStringLiteral("mpris:audioCodec")));
+    const QString videoCodec =
+        firstString(data.value(QStringLiteral("mpris:videoCodec")));
+    const QString bitrate =
+        firstString(data.value(QStringLiteral("mpris:audioBitrate")));
+    const QString videoBitrate =
+        firstString(data.value(QStringLiteral("mpris:videoBitrate")));
+    const QString videoWidth =
+        firstString(data.value(QStringLiteral("mpris:videoWidth")));
+    const QString videoHeight =
+        firstString(data.value(QStringLiteral("mpris:videoHeight")));
+    const QString channels =
+        firstString(data.value(QStringLiteral("mpris:audioChannels")));
+
+    if (!audioCodec.isEmpty())
+        values.append(audioCodec);
+    if (!videoCodec.isEmpty())
+        values.append(videoCodec);
+    if (!bitrate.isEmpty())
+        values.append(bitrate + QStringLiteral(" kbps"));
+    if (!videoBitrate.isEmpty())
+        values.append(videoBitrate + QStringLiteral(" kbps"));
+    if (!videoWidth.isEmpty() && !videoHeight.isEmpty())
+        values.append(videoWidth + QStringLiteral("x") + videoHeight);
+    if (!channels.isEmpty())
+        values.append(channels + QStringLiteral(" ch"));
+
+    return values.join(QStringLiteral(" · "));
 }
 
 void MediaController::updateArtwork(const QVariantMap &data)
