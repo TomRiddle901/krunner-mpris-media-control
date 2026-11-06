@@ -9,6 +9,7 @@
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QDBusVariant>
+#include <QDebug>
 #include <QEvent>
 #include <QFile>
 #include <QHBoxLayout>
@@ -281,6 +282,7 @@ void MediaController::refreshCurrentPlayer()
 void MediaController::updatePlayerView()
 {
     const QString service = currentService();
+    qWarning() << "service" << service;
 
     if (service.isEmpty()) {
         m_titleLabel->setText(QStringLiteral("No MPRIS player found"));
@@ -298,6 +300,7 @@ void MediaController::updatePlayerView()
     QDBusInterface player(service, kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
+    qWarning() << "metadata size" << data.size();
     const QString status = player.property("PlaybackStatus").toString();
     const qint64 position = player.property("Position").toLongLong();
     const qint64 duration = data.value("mpris:length").toLongLong();
@@ -306,6 +309,12 @@ void MediaController::updatePlayerView()
         firstString(data.value("xesam:album")).isEmpty()
             ? firstString(data.value("xesam:albumArtist"))
             : firstString(data.value("xesam:album"));
+    qWarning() << "metadata fields" << data.keys()
+               << data.value("xesam:artist").metaType().name()
+               << data.value("xesam:album").metaType().name()
+               << data.value("xesam:artist")
+               << data.value("xesam:album")
+               << artist << album;
 
     m_titleLabel->setText(firstString(data.value("xesam:title")));
     if (!artist.isEmpty() && !album.isEmpty())
