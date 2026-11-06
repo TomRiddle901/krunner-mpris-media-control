@@ -535,22 +535,50 @@ PlasmaComponents3.ItemDelegate {
             }
 
             // Barra di avanzamento.
-            PlasmaComponents3.ProgressBar {
-                id: progressBar
-
+            Item {
                 Layout.fillWidth: true
+                implicitHeight: progressBar.implicitHeight
 
-                from: 0
-                to: mprisDuration > 0
-                ? mprisDuration
-                : 1
+                PlasmaComponents3.ProgressBar {
+                    id: progressBar
 
-                value: Math.min(
-                    mprisPosition,
-                    mprisDuration > 0
+                    anchors.fill: parent
+
+                    from: 0
+                    to: mprisDuration > 0
                     ? mprisDuration
                     : 1
-                )
+
+                    value: Math.min(
+                        mprisPosition,
+                        mprisDuration > 0
+                        ? mprisDuration
+                        : 1
+                    )
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: resultDelegate.isMpris
+                    acceptedButtons: Qt.LeftButton
+
+                    onClicked: (mouse) => {
+                        if (mprisDuration <= 0 || width <= 0)
+                            return
+
+                        const percentage = Math.max(
+                            0,
+                            Math.min(
+                                100,
+                                Math.round(mouse.x / width * 100)
+                            )
+                        )
+
+                        resultDelegate.ListView.view.runAction(
+                            3 + percentage
+                        )
+                    }
+                }
             }
 
             // Tempo corrente e durata totale.
@@ -613,7 +641,8 @@ PlasmaComponents3.ItemDelegate {
 
                         height: Kirigami.Units.iconSizes.medium
 
-                        visible: modelData.visible || true
+                        visible: !String(modelData.id || "")
+                            .startsWith("seek:")
                         enabled: modelData.enabled || true
 
                         Accessible.role: Accessible.Button
@@ -681,7 +710,8 @@ PlasmaComponents3.ItemDelegate {
                     width: height
                     height: Kirigami.Units.iconSizes.medium
 
-                    visible: modelData.visible || true
+                    visible: !String(modelData.id || "")
+                        .startsWith("seek:")
                     enabled: modelData.enabled || true
 
                     Accessible.role: Accessible.Button
