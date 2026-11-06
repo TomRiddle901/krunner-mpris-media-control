@@ -12,6 +12,7 @@
 #include <QEvent>
 #include <QFile>
 #include <QHBoxLayout>
+#include <QHash>
 #include <QImage>
 #include <QIcon>
 #include <QJsonDocument>
@@ -146,17 +147,23 @@ QPair<QString, QString> fileAudioMetadata(const QVariantMap &data)
     if (!url.isLocalFile())
         return {};
 
+    static QHash<QString, QPair<QString, QString>> cache;
+    const QString filePath = url.toLocalFile();
+    if (cache.contains(filePath))
+        return cache.value(filePath);
+
     QProcess probe;
     probe.start(QStringLiteral("ffprobe"),
                 {QStringLiteral("-v"), QStringLiteral("quiet"),
                  QStringLiteral("-print_format"), QStringLiteral("json"),
                  QStringLiteral("-show_entries"),
-                 QStringLiteral("format_tags=artist,album"),
-                 url.toLocalFile()});
+                 QStringLiteral("format_tags=artist,album"), filePath});
     if (!probe.waitForFinished(1000) ||
         probe.exitStatus() != QProcess::NormalExit ||
-        probe.exitCode() != 0)
+        probe.exitCode() != 0) {
+        cache.insert(filePath, {});
         return {};
+    }
 
     const QJsonObject format =
         QJsonDocument::fromJson(probe.readAllStandardOutput())
@@ -164,8 +171,11 @@ QPair<QString, QString> fileAudioMetadata(const QVariantMap &data)
             .value(QStringLiteral("format"))
             .toObject();
     const QJsonObject tags = format.value(QStringLiteral("tags")).toObject();
-    return {tags.value(QStringLiteral("artist")).toString(),
-            tags.value(QStringLiteral("album")).toString()};
+    const QPair<QString, QString> result{
+        tags.value(QStringLiteral("artist")).toString(),
+        tags.value(QStringLiteral("album")).toString()};
+    cache.insert(filePath, result);
+    return result;
 }
 
 }
