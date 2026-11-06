@@ -71,6 +71,41 @@ QVariantMap metadata(const QDBusInterface &player)
     return {};
 }
 
+qint64 dbusInteger(const QVariant &value)
+{
+    if (!value.isValid())
+        return 0;
+
+    if (value.userType() == qMetaTypeId<QDBusVariant>())
+        return dbusInteger(value.value<QDBusVariant>().variant());
+
+    if (value.canConvert<qlonglong>())
+        return value.toLongLong();
+
+    if (value.userType() == qMetaTypeId<QDBusArgument>()) {
+        QDBusArgument argument = value.value<QDBusArgument>();
+        if (argument.currentType() == QDBusArgument::BasicType) {
+            qlonglong result = 0;
+            argument >> result;
+            return result;
+        }
+    }
+
+    return value.toString().toLongLong();
+}
+
+qint64 playerPosition(const QDBusInterface &player)
+{
+    QDBusInterface properties(player.service(), kPropertiesPath,
+                              kPropertiesInterface,
+                              QDBusConnection::sessionBus());
+    const QDBusReply<QDBusVariant> reply =
+        properties.call(QStringLiteral("Get"),
+                        QString::fromLatin1(kPlayerInterface),
+                        QStringLiteral("Position"));
+    return reply.isValid() ? dbusInteger(reply.value().variant()) : 0;
+}
+
 QStringList mprisServices()
 {
     auto *interface = QDBusConnection::sessionBus().interface();
@@ -335,8 +370,8 @@ void MediaController::updatePlayerView()
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
     const QString status = player.property("PlaybackStatus").toString();
-    const qint64 position = player.property("Position").toLongLong();
-    const qint64 duration = data.value("mpris:length").toLongLong();
+    const qint64 position = playerPosition(player);
+    const qint64 duration = dbusInteger(data.value("mpris:length"));
     QString artist = firstString(data.value("xesam:artist"));
     QString album =
         firstString(data.value("xesam:album")).isEmpty()
@@ -481,7 +516,7 @@ void MediaController::seekTo(int position)
     QDBusInterface player(currentService(), kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
-    const qint64 duration = data.value("mpris:length").toLongLong();
+    const qint64 duration = dbusInteger(data.value("mpris:length"));
     const QVariant trackId = data.value("mpris:trackid");
 
     if (!player.isValid() || duration <= 0)
