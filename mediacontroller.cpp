@@ -43,22 +43,20 @@ QVariantMap metadata(const QDBusInterface &player)
     QDBusInterface properties(player.service(), kPropertiesPath,
                               kPropertiesInterface,
                               QDBusConnection::sessionBus());
-    const QDBusReply<QDBusVariant> reply =
-        properties.call(QStringLiteral("Get"),
-                        QString::fromLatin1(kPlayerInterface),
-                        QStringLiteral("Metadata"));
+    const QDBusReply<QVariantMap> reply =
+        properties.call(QStringLiteral("GetAll"),
+                        QString::fromLatin1(kPlayerInterface));
 
     if (!reply.isValid())
         return {};
 
-    QVariantMap metadata = player.property("Metadata").toMap();
-    const QVariantMap directMetadata = reply.value().variant().toMap();
-    for (auto it = directMetadata.cbegin(); it != directMetadata.cend(); ++it) {
-        if (!metadata.contains(it.key()) || !metadata.value(it.key()).isValid())
-            metadata.insert(it.key(), it.value());
-    }
+    const QVariantMap allProperties = reply.value();
+    const QVariant metadataValue =
+        allProperties.value(QStringLiteral("Metadata"));
+    if (metadataValue.userType() == qMetaTypeId<QDBusVariant>())
+        return metadataValue.value<QDBusVariant>().variant().toMap();
 
-    return metadata;
+    return metadataValue.toMap();
 }
 
 QStringList mprisServices()
