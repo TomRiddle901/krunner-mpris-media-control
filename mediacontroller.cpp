@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
+#include <QDBusArgument>
 #include <QDBusInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
@@ -61,8 +62,26 @@ QStringList mprisServices()
 
 QString firstString(const QVariant &value)
 {
-    const QStringList values = value.toStringList();
-    return values.isEmpty() ? value.toString() : values.first();
+    if (value.userType() == qMetaTypeId<QDBusArgument>()) {
+        const QDBusArgument argument = value.value<QDBusArgument>();
+        QStringList values;
+        argument >> values;
+
+        if (!values.isEmpty())
+            return values.first();
+    } else if (value.canConvert<QStringList>()) {
+        const QStringList values = value.toStringList();
+
+        if (!values.isEmpty())
+            return values.first();
+    } else if (value.canConvert<QVariantList>()) {
+        const QVariantList values = value.toList();
+
+        if (!values.isEmpty())
+            return values.first().toString();
+    }
+
+    return value.toString();
 }
 
 }
@@ -79,7 +98,7 @@ MediaController::MediaController(QWidget *parent)
     setWindowTitle(QStringLiteral("MPRIS Media Controller"));
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_QuitOnClose, false);
-    resize(620, 280);
+    resize(620, 380);
 
     auto *central = new QWidget(this);
     auto *mainLayout = new QVBoxLayout(central);
@@ -237,7 +256,10 @@ void MediaController::updatePlayerView()
     const qint64 position = player.property("Position").toLongLong();
     const qint64 duration = data.value("mpris:length").toLongLong();
     const QString artist = firstString(data.value("xesam:artist"));
-    const QString album = firstString(data.value("xesam:album"));
+    const QString album =
+        firstString(data.value("xesam:album")).isEmpty()
+            ? firstString(data.value("xesam:albumArtist"))
+            : firstString(data.value("xesam:album"));
 
     m_titleLabel->setText(firstString(data.value("xesam:title")));
     if (!artist.isEmpty() && !album.isEmpty())

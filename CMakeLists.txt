@@ -6,6 +6,7 @@ project(mpris-media-controller VERSION 2.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Qt Widgets provides the standalone controller UI and Qt DBus talks to MPRIS.
 find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui Widgets)
