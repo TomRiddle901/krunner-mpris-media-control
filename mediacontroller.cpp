@@ -94,6 +94,13 @@ QString firstString(const QVariant &value)
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
         const QDBusArgument argument = value.value<QDBusArgument>();
+        if (argument.currentType() == QDBusArgument::BasicType) {
+            QString result;
+            argument >> result;
+            if (!result.isEmpty())
+                return result;
+        }
+
         const QStringList castValues = qdbus_cast<QStringList>(value);
         if (!castValues.isEmpty())
             return castValues.first();
