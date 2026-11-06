@@ -7,7 +7,6 @@
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
-#include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QIcon>
 #include <QRegularExpression>
@@ -44,9 +43,6 @@ struct PlayerInfo {
 
     // Durata totale del brano in microsecondi.
     qint64 duration = 0;
-
-    // Traccia MPRIS necessaria per SetPosition.
-    QString trackId;
 };
 
 // Restituisce il primo elemento di un valore stringa o QStringList.
@@ -151,13 +147,6 @@ PlayerInfo readPlayer(const QString &service)
 
     if (duration.isValid())
         info.duration = duration.toLongLong();
-
-    const QVariant trackId = metadata.value("mpris:trackid");
-
-    if (trackId.canConvert<QDBusObjectPath>())
-        info.trackId = trackId.value<QDBusObjectPath>().path();
-    else
-        info.trackId = trackId.toString();
 
     // Testi di fallback nel caso il player non fornisca i metadata.
     if (info.title.isEmpty())
@@ -273,19 +262,6 @@ KRunner::QueryMatch createMatch(
         QStringLiteral("next"),
         QStringLiteral("media-skip-forward"),
         QStringLiteral("Successivo")));
-
-    // Azioni interne usate dal clic sulla barra di avanzamento.
-    for (int percentage = 0; percentage <= 100; ++percentage) {
-        match.addAction(KRunner::Action(
-            QStringLiteral("seek:%1").arg(percentage),
-            QString(),
-            QStringLiteral("seek")));
-    }
-
-    match.setData(QVariantMap{
-        {QStringLiteral("service"), info.service},
-        {QStringLiteral("trackId"), info.trackId},
-    });
 
     return match;
 }
@@ -438,8 +414,8 @@ void MprisRunner::run(
     const KRunner::QueryMatch &match)
 {
     // Recupera il servizio D-Bus del player selezionato.
-    const QVariantMap data = match.data().toMap();
-    const QString service = data.value(QStringLiteral("service")).toString();
+    const QString service =
+        match.data().toString();
 
     if (service.isEmpty())
         return;
@@ -449,40 +425,6 @@ void MprisRunner::run(
         match.selectedAction().text().isEmpty()
             ? QStringLiteral("playpause")
             : match.selectedAction().id();
-
-    if (action.startsWith(QStringLiteral("seek:"))) {
-        bool ok = false;
-        const int percentage =
-            action.mid(QStringLiteral("seek:").length()).toInt(&ok);
-        const QString trackId =
-            data.value(QStringLiteral("trackId")).toString();
-
-        if (ok && percentage >= 0 && percentage <= 100 &&
-            !trackId.isEmpty()) {
-            QDBusInterface player(
-                service,
-                kRootPath,
-                kPlayerInterface,
-                QDBusConnection::sessionBus());
-
-            if (player.isValid()) {
-                const QVariant duration =
-                    player.property("Metadata");
-                const QVariantMap metadata = duration.toMap();
-                const qint64 length =
-                    metadata.value("mpris:length").toLongLong();
-                const qint64 position =
-                    length * percentage / 100;
-
-                player.call(
-                    QStringLiteral("SetPosition"),
-                    QDBusObjectPath(trackId),
-                    position);
-            }
-        }
-
-        return;
-    }
 
     // Ritardo necessario per permettere al player di aggiornare i metadata.
     int refreshDelay = 30;
