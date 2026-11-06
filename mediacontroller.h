@@ -1,0 +1,43 @@
+#pragma once
+
+#include <QMainWindow>
+
+class QComboBox;
+class QLabel;
+class QPushButton;
+class QSlider;
+class QSystemTrayIcon;
+class QTimer;
+
+class MediaController : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit MediaController(QWidget *parent = nullptr);
+
+protected:
+    bool event(QEvent *event) override;
+
+private:
+    void refreshPlayers();
+    void refreshCurrentPlayer();
+    void updatePlayerView();
+    void callPlayer(const QString &method);
+    void seekTo(int position);
+    QString currentService() const;
+    QString formatTime(qint64 microseconds) const;
+    void showController();
+
+    QComboBox *m_playerSelector = nullptr;
+    QLabel *m_titleLabel = nullptr;
+    QLabel *m_artistLabel = nullptr;
+    QLabel *m_timeLabel = nullptr;
+    QSlider *m_positionSlider = nullptr;
+    QPushButton *m_previousButton = nullptr;
+    QPushButton *m_playPauseButton = nullptr;
+    QPushButton *m_nextButton = nullptr;
+    QSystemTrayIcon *m_trayIcon = nullptr;
+    QTimer *m_refreshTimer = nullptr;
+    bool m_updatingSlider = false;
+};

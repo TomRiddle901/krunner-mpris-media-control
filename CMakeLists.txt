@@ -21,7 +21,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 # - Core: classi fondamentali Qt
 # - DBus: comunicazione con i player MPRIS
 # - Gui: QIcon/QPixmap per mostrare la copertina
-find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui Widgets)
 
 # KRunner.
 find_package(KF6 REQUIRED COMPONENTS Runner)
@@ -41,4 +41,18 @@ target_link_libraries(krunner_mpris
         Qt6::DBus
         Qt6::Gui
         KF6::Runner
+)
+
+add_executable(mpris_media_controller
+    media-main.cpp
+    mediacontroller.cpp
+    mediacontroller.h
+)
+
+target_link_libraries(mpris_media_controller
+    PRIVATE
+        Qt6::Core
+        Qt6::DBus
+        Qt6::Gui
+        Qt6::Widgets
 )
