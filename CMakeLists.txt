@@ -56,3 +56,7 @@ target_link_libraries(mpris_media_controller
         Qt6::Gui
         Qt6::Widgets
 )
+
+install(TARGETS mpris_media_controller
+    RUNTIME DESTINATION ${KDE_INSTALL_BINDIR}
+)
