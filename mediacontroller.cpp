@@ -40,7 +40,18 @@ constexpr auto kPropertiesPath = "/org/mpris/MediaPlayer2";
 
 QVariantMap metadata(const QDBusInterface &player)
 {
-    return player.property("Metadata").toMap();
+    QDBusInterface properties(player.service(), kPropertiesPath,
+                              kPropertiesInterface,
+                              QDBusConnection::sessionBus());
+    const QDBusReply<QDBusVariant> reply =
+        properties.call(QStringLiteral("Get"),
+                        QString::fromLatin1(kPlayerInterface),
+                        QStringLiteral("Metadata"));
+
+    if (!reply.isValid())
+        return {};
+
+    return reply.value().variant().toMap();
 }
 
 QStringList mprisServices()
