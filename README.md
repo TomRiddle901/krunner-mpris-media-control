@@ -6,6 +6,44 @@ The runner provides a compact media-control panel inside KRunner, with the curre
 
 ---
 
+## Standalone media controller
+
+The project also provides `mpris_media_controller`, a standalone Qt Widgets application for controlling MPRIS players without depending on the KRunner window.
+
+It provides:
+
+- player selection when multiple MPRIS players are available;
+- previous, play/pause and next controls;
+- a clickable and draggable playback slider;
+- automatic playback information updates;
+- a system tray icon;
+- popup hiding when the window loses focus;
+- `--toggle` support for showing or hiding the controller from a custom shortcut.
+
+Build and install it together with the runner:
+
+```bash
+cmake -S . -B build
+cmake --build build -j"$(nproc)"
+cmake --install build --prefix "$HOME/.local"
+```
+
+Start the controller:
+
+```bash
+mpris_media_controller
+```
+
+To toggle an already running controller:
+
+```bash
+mpris_media_controller --toggle
+```
+
+For a local test installation, replace `"$HOME/.local"` with a directory inside the project and run the executable from that directory.
+
+---
+
 ## Features
 
 - Supports MPRIS-compatible media players;
