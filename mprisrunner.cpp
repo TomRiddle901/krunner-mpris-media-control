@@ -8,7 +8,6 @@
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusReply>
-#include <QEventLoop>
 #include <QIcon>
 #include <QRegularExpression>
 #include <QTimer>
@@ -186,6 +185,21 @@ QStringList findMprisServices()
     return services;
 }
 
+// Chiede a KRunner di eseguire nuovamente la ricerca "player".
+void refreshKRunner()
+{
+    QDBusInterface krunner(
+        QStringLiteral("org.kde.krunner"),
+        QStringLiteral("/App"),
+        QStringLiteral("org.kde.krunner.App"),
+        QDBusConnection::sessionBus());
+
+    if (krunner.isValid())
+        krunner.call(
+            QStringLiteral("query"),
+            QStringLiteral("player"));
+}
+
 // Crea il risultato visualizzato da KRunner.
 KRunner::QueryMatch createMatch(
     KRunner::AbstractRunner &runner,
@@ -280,19 +294,40 @@ void MprisRunner::match(KRunner::RunnerContext &context)
 {
     const QString query = context.query().trimmed();
 
+    // "player_" viene usato solo per forzare il refresh.
+    const bool isRefreshQuery =
+        query.compare(
+            QStringLiteral("player_"),
+            Qt::CaseInsensitive) == 0;
+
+    // Durante il refresh, "player_" viene trattato come "player".
+    const QString normalizedQuery =
+        isRefreshQuery
+            ? QStringLiteral("player")
+            : query;
+
+    // Quando KRunner riceve "player_", torna automaticamente a "player".
+    if (isRefreshQuery) {
+        QTimer::singleShot(
+            0,
+            []() {
+                refreshKRunner();
+            });
+    }
+
     // Controlla quale comando è stato digitato.
     const bool isPlayerQuery =
-        query.startsWith(
+        normalizedQuery.startsWith(
             QStringLiteral("player"),
             Qt::CaseInsensitive);
 
     const bool isMediaQuery =
-        query.startsWith(
+        normalizedQuery.startsWith(
             QStringLiteral("media"),
             Qt::CaseInsensitive);
 
     const bool isMprisQuery =
-        query.startsWith(
+        normalizedQuery.startsWith(
             QStringLiteral("mpris"),
             Qt::CaseInsensitive);
 
@@ -375,7 +410,7 @@ void MprisRunner::match(KRunner::RunnerContext &context)
 }
 
 void MprisRunner::run(
-    const KRunner::RunnerContext &context,
+    const KRunner::RunnerContext &,
     const KRunner::QueryMatch &match)
 {
     // Recupera il servizio D-Bus del player selezionato.
@@ -415,25 +450,10 @@ void MprisRunner::run(
             QStringLiteral("PlayPause"));
     }
 
-    // Attende l'aggiornamento dei metadata prima di restituire il contesto.
-    QEventLoop refreshLoop;
-    QTimer::singleShot(
-        refreshDelay,
-        &refreshLoop,
-        &QEventLoop::quit);
-    refreshLoop.exec();
-
-    // La richiesta viene letta da KRunner al termine di run(). Cambiare solo
-    // lo spazio finale forza il ricalcolo senza chiudere la finestra.
-    const QString query = context.query();
-    const QString refreshedQuery =
-        query.endsWith(QLatin1Char(' '))
-            ? query.chopped(1)
-            : query + QLatin1Char(' ');
-
-    context.requestQueryStringUpdate(
-        refreshedQuery,
-        refreshedQuery.length());
+    // Dopo il comando aggiorna la card senza chiudere KRunner.
+    QTimer::singleShot(refreshDelay, []() {
+        refreshKRunner();
+    });
 }
 
 K_PLUGIN_CLASS_WITH_JSON(
