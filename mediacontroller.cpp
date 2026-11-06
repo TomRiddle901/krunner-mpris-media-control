@@ -38,6 +38,34 @@ constexpr auto kPlayerInterface = "org.mpris.MediaPlayer2.Player";
 constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr auto kPropertiesPath = "/org/mpris/MediaPlayer2";
 
+QVariantMap dbusMetadataMap(const QVariant &value)
+{
+    QVariantMap result;
+    QVariant unwrapped = value;
+    if (unwrapped.userType() == qMetaTypeId<QDBusVariant>())
+        unwrapped = unwrapped.value<QDBusVariant>().variant();
+
+    if (unwrapped.userType() != qMetaTypeId<QDBusArgument>())
+        return result;
+
+    QDBusArgument argument = unwrapped.value<QDBusArgument>();
+    if (argument.currentType() != QDBusArgument::MapType)
+        return result;
+
+    argument.beginMap();
+    while (!argument.atEnd()) {
+        QString key;
+        QDBusVariant item;
+        argument.beginMapEntry();
+        argument >> key >> item;
+        argument.endMapEntry();
+        if (!key.isEmpty())
+            result.insert(key, item.variant());
+    }
+    argument.endMap();
+    return result;
+}
+
 QVariantMap metadata(const QDBusInterface &player)
 {
     QDBusInterface properties(player.service(), kPropertiesPath,
@@ -52,7 +80,11 @@ QVariantMap metadata(const QDBusInterface &player)
         return {};
 
     QVariantMap metadata = player.property("Metadata").toMap();
-    const QVariantMap directMetadata = reply.value().variant().toMap();
+    const QVariantMap decodedMetadata =
+        dbusMetadataMap(QVariant::fromValue(reply.value()));
+    const QVariantMap directMetadata = decodedMetadata.isEmpty()
+        ? reply.value().variant().toMap()
+        : decodedMetadata;
     for (auto it = directMetadata.cbegin(); it != directMetadata.cend(); ++it) {
         if (!metadata.contains(it.key()) || !metadata.value(it.key()).isValid())
             metadata.insert(it.key(), it.value());
