@@ -40,23 +40,7 @@ constexpr auto kPropertiesPath = "/org/mpris/MediaPlayer2";
 
 QVariantMap metadata(const QDBusInterface &player)
 {
-    QDBusInterface properties(player.service(), kPropertiesPath,
-                              kPropertiesInterface,
-                              QDBusConnection::sessionBus());
-    const QDBusReply<QVariantMap> reply =
-        properties.call(QStringLiteral("GetAll"),
-                        QString::fromLatin1(kPlayerInterface));
-
-    if (!reply.isValid())
-        return {};
-
-    const QVariantMap allProperties = reply.value();
-    const QVariant metadataValue =
-        allProperties.value(QStringLiteral("Metadata"));
-    if (metadataValue.userType() == qMetaTypeId<QDBusVariant>())
-        return metadataValue.value<QDBusVariant>().variant().toMap();
-
-    return metadataValue.toMap();
+    return player.property("Metadata").toMap();
 }
 
 QStringList mprisServices()
@@ -88,30 +72,6 @@ QString firstString(const QVariant &value)
 
     if (value.userType() == qMetaTypeId<QDBusVariant>()) {
         return firstString(value.value<QDBusVariant>().variant());
-    }
-
-    if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        QDBusArgument argument = value.value<QDBusArgument>();
-        if (argument.currentType() == QDBusArgument::BasicType) {
-            QString result;
-            argument >> result;
-            if (!result.isEmpty())
-                return result;
-        }
-
-        if (argument.currentType() == QDBusArgument::ArrayType) {
-            QString result;
-            argument.beginArray();
-            while (!argument.atEnd()) {
-                QString item;
-                argument >> item;
-                if (result.isEmpty())
-                    result = item;
-            }
-            argument.endArray();
-            if (!result.isEmpty())
-                return result;
-        }
     }
 
     if (value.canConvert<QStringList>()) {
