@@ -14,10 +14,13 @@
 #include <QHBoxLayout>
 #include <QImage>
 #include <QIcon>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QMenu>
 #include <QPixmap>
 #include <QPushButton>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QSlider>
 #include <QSystemTrayIcon>
@@ -135,6 +138,34 @@ QString firstString(const QVariant &value)
     }
 
     return value.toString();
+}
+
+QPair<QString, QString> fileAudioMetadata(const QVariantMap &data)
+{
+    const QUrl url(firstString(data.value(QStringLiteral("xesam:url"))));
+    if (!url.isLocalFile())
+        return {};
+
+    QProcess probe;
+    probe.start(QStringLiteral("ffprobe"),
+                {QStringLiteral("-v"), QStringLiteral("quiet"),
+                 QStringLiteral("-print_format"), QStringLiteral("json"),
+                 QStringLiteral("-show_entries"),
+                 QStringLiteral("format_tags=artist,album"),
+                 url.toLocalFile()});
+    if (!probe.waitForFinished(1000) ||
+        probe.exitStatus() != QProcess::NormalExit ||
+        probe.exitCode() != 0)
+        return {};
+
+    const QJsonObject format =
+        QJsonDocument::fromJson(probe.readAllStandardOutput())
+            .object()
+            .value(QStringLiteral("format"))
+            .toObject();
+    const QJsonObject tags = format.value(QStringLiteral("tags")).toObject();
+    return {tags.value(QStringLiteral("artist")).toString(),
+            tags.value(QStringLiteral("album")).toString()};
 }
 
 }
@@ -308,11 +339,18 @@ void MediaController::updatePlayerView()
     const QString status = player.property("PlaybackStatus").toString();
     const qint64 position = player.property("Position").toLongLong();
     const qint64 duration = data.value("mpris:length").toLongLong();
-    const QString artist = firstString(data.value("xesam:artist"));
-    const QString album =
+    QString artist = firstString(data.value("xesam:artist"));
+    QString album =
         firstString(data.value("xesam:album")).isEmpty()
             ? firstString(data.value("xesam:albumArtist"))
             : firstString(data.value("xesam:album"));
+    if (artist.isEmpty() || album.isEmpty()) {
+        const auto fileMetadata = fileAudioMetadata(data);
+        if (artist.isEmpty())
+            artist = fileMetadata.first;
+        if (album.isEmpty())
+            album = fileMetadata.second;
+    }
 
     m_titleLabel->setText(firstString(data.value("xesam:title")));
     if (!artist.isEmpty() && !album.isEmpty())
