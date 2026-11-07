@@ -16,18 +16,18 @@ int main(int argc, char **argv)
 
     if (toggle &&
         QDBusConnection::sessionBus().interface()->isServiceRegistered(
-            QStringLiteral("org.tommaso.MprisMediaController"))) {
+            QStringLiteral("org.MprisMediaController.standalone"))) {
         QDBusInterface controller(
-            QStringLiteral("org.tommaso.MprisMediaController"),
+            QStringLiteral("org.MprisMediaController.standalone"),
             QStringLiteral("/MediaController"),
-            QStringLiteral("org.tommaso.MprisMediaController"),
+            QStringLiteral("org.MprisMediaController.standalone"),
             QDBusConnection::sessionBus());
         controller.call(QStringLiteral("toggleVisibility"));
         return 0;
     }
 
     QDBusConnection::sessionBus().registerService(
-        QStringLiteral("org.tommaso.MprisMediaController"));
+        QStringLiteral("org.MprisMediaController.standalone"));
 
     MediaController controller;
     controller.show();

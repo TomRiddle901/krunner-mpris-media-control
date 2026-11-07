@@ -236,7 +236,7 @@ MediaController::MediaController(QWidget *parent)
 {
     QDBusConnection::sessionBus().registerObject(
         QStringLiteral("/MediaController"),
-        QStringLiteral("org.tommaso.MprisMediaController"),
+        QStringLiteral("org.MprisMediaController.standalone"),
         this,
         QDBusConnection::ExportScriptableSlots);
 

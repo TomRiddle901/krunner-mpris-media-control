@@ -13,7 +13,7 @@ class QTimer;
 class MediaController : public QMainWindow
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.tommaso.MprisMediaController")
+    Q_CLASSINFO("D-Bus Interface", "org.MprisMediaController.standalone")
 
 public:
     explicit MediaController(QWidget *parent = nullptr);
