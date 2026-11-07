@@ -61,8 +61,11 @@ QVariantMap metadata(const QDBusInterface &player)
         return {};
 
     const QVariant value = unwrapDbusValue(reply.value().variant());
-    if (value.canConvert<QVariantMap>())
-        return value.toMap();
+    if (value.canConvert<QVariantMap>()) {
+        const QVariantMap map = value.toMap();
+        if (!map.isEmpty())
+            return map;
+    }
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
         QDBusArgument argument = value.value<QDBusArgument>();
