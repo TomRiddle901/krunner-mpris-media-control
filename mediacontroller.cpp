@@ -9,7 +9,6 @@
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QDBusVariant>
-#include <QDebug>
 #include <QEvent>
 #include <QFile>
 #include <QFileInfo>
@@ -66,7 +65,7 @@ QVariantMap metadata(const QDBusInterface &player)
         return value.toMap();
 
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        const QDBusArgument argument = value.value<QDBusArgument>();
+        QDBusArgument argument = value.value<QDBusArgument>();
         return qdbus_cast<QVariantMap>(argument);
     }
 
@@ -403,11 +402,6 @@ void MediaController::updatePlayerView()
         firstString(data.value("xesam:album")).isEmpty()
             ? firstString(data.value("xesam:albumArtist"))
             : firstString(data.value("xesam:album"));
-    qWarning() << "metadata" << data.keys()
-               << data.value("xesam:artist").userType()
-               << data.value("xesam:album").userType()
-               << data.value("xesam:url").userType()
-               << artist << album;
     if (artist.isEmpty() || album.isEmpty()) {
         const auto fileMetadata = fileAudioMetadata(data);
         if (artist.isEmpty())
