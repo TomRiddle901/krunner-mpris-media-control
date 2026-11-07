@@ -401,10 +401,11 @@ void MediaController::updatePlayerView()
     const qint64 position = playerPosition(player);
     const qint64 duration = dbusInteger(data.value("mpris:length"));
     QString artist = firstString(data.value("xesam:artist"));
-    QString album =
-        firstString(data.value("xesam:album")).isEmpty()
-            ? firstString(data.value("xesam:albumArtist"))
-            : firstString(data.value("xesam:album"));
+    QString album = firstString(data.value("xesam:album"));
+
+    if (artist.isEmpty())
+        artist = firstString(data.value("xesam:albumArtist"));
+
     if (artist.isEmpty() || album.isEmpty()) {
         const auto fileMetadata = fileAudioMetadata(data);
         if (artist.isEmpty())
