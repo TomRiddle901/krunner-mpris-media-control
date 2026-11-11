@@ -84,12 +84,18 @@ int main(int argc, char **argv)
         // Nessuna istanza attiva: avviamo normalmente il programma.
     }
 
-    const QDBusReply<void> registration =
-        busInterface->registerService(kServiceName);
+    const auto registration =
+    busInterface->registerService(kServiceName);
 
     if (!registration.isValid()) {
         qCritical() << "Impossibile registrare il servizio D-Bus:"
                     << registration.error().message();
+        return 1;
+    }
+
+    if (registration.value() !=
+        QDBusConnectionInterface::ServiceRegistered) {
+        qCritical() << "Il servizio D-Bus non è stato registrato.";
         return 1;
     }
 
