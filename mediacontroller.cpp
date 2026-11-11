@@ -47,30 +47,64 @@ QVariant unwrapDbusValue(const QVariant &value)
     return value;
 }
 
+
 QVariantMap metadata(const QDBusInterface &player)
 {
-    QDBusInterface properties(player.service(), kPropertiesPath,
-                              kPropertiesInterface,
-                              QDBusConnection::sessionBus());
-    const QDBusReply<QDBusVariant> reply =
-        properties.call(QStringLiteral("Get"),
-                        QString::fromLatin1(kPlayerInterface),
-                        QStringLiteral("Metadata"));
+    QDBusInterface properties(
+        player.service(),
+        kPropertiesPath,
+        kPropertiesInterface,
+        QDBusConnection::sessionBus());
 
-    if (!reply.isValid())
+    // Recuperiamo tutte le proprietà dell'interfaccia Player.
+    const QDBusReply<QVariantMap> reply =
+        properties.call(
+            QStringLiteral("GetAll"),
+            QString::fromLatin1(kPlayerInterface));
+
+    if (!reply.isValid()) {
+        qWarning() << "Errore nella lettura delle proprietà MPRIS:"
+                   << reply.error().message();
         return {};
+    }
 
-    const QVariant value = unwrapDbusValue(reply.value().variant());
+    // Estraiamo la proprietà Metadata.
+    QVariant value =
+        reply.value().value(QStringLiteral("Metadata"));
+
+    if (!value.isValid()) {
+        qWarning() << "La proprietà Metadata non è disponibile per:"
+                   << player.service();
+        return {};
+    }
+
+    // Rimuoviamo eventuali contenitori D-Bus.
+    while (value.userType() == qMetaTypeId<QDBusVariant>()) {
+        value = value.value<QDBusVariant>().variant();
+    }
+
+    // Proviamo a convertire direttamente in QVariantMap.
     if (value.canConvert<QVariantMap>()) {
         const QVariantMap map = value.toMap();
+
         if (!map.isEmpty())
             return map;
     }
 
+    // Gestiamo anche i dati ricevuti come QDBusArgument.
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        QDBusArgument argument = value.value<QDBusArgument>();
-        return qdbus_cast<QVariantMap>(argument);
+        const QDBusArgument argument =
+            value.value<QDBusArgument>();
+
+        const QVariantMap map =
+            qdbus_cast<QVariantMap>(argument);
+
+        if (!map.isEmpty())
+            return map;
     }
+
+    qWarning() << "Formato Metadata non riconosciuto:"
+               << value.typeName();
 
     return {};
 }
