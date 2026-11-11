@@ -362,13 +362,17 @@ void MediaController::refreshPlayers()
         m_playerSelector->addItem(playerIcon(service), name, service);
     }
 
-    const int selectedIndex = m_playerSelector->findData(selected);
-    if (selectedIndex >= 0)
-        m_playerSelector->setCurrentIndex(selectedIndex);
-    else if (m_playerSelector->count() > 0)
-        m_playerSelector->setCurrentIndex(0);
+    int selectedIndex = m_playerSelector->findData(selected);
 
-    m_playerSelector->blockSignals(false);
+    // Se non abbiamo ancora un lettore selezionato, preferiamo Elisa.
+    if (selectedIndex < 0) {
+        selectedIndex = m_playerSelector->findData(QStringLiteral("org.mpris.MediaPlayer2.elisa"));
+    }
+
+    // Se Elisa non è disponibile, scegliamo il primo lettore trovato.
+    if (selectedIndex < 0 && m_playerSelector->count() > 0) selectedIndex = 0;
+
+    if (selectedIndex >= 0) m_playerSelector->setCurrentIndex(selectedIndex);
 }
 
 void MediaController::refreshCurrentPlayer()
