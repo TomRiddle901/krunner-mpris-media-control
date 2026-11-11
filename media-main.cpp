@@ -1,33 +1,97 @@
+
 #include "mediacontroller.h"
 
 #include <QApplication>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
+#include <QDBusReply>
+#include <QDebug>
+
+namespace {
+
+const QString kServiceName =
+    QStringLiteral("org.MprisMediaController.standalone");
+
+const QString kObjectPath =
+    QStringLiteral("/MediaController");
+
+}
 
 int main(int argc, char **argv)
 {
     QApplication application(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("MPRIS Media Controller"));
+
+    QApplication::setApplicationName(
+        QStringLiteral("MPRIS Media Controller"));
+
     QApplication::setQuitOnLastWindowClosed(false);
 
-    const bool toggle = application.arguments().contains(
-        QStringLiteral("--toggle"));
+    const bool toggle =
+        application.arguments().contains(QStringLiteral("--toggle"));
 
-    if (toggle &&
-        QDBusConnection::sessionBus().interface()->isServiceRegistered(
-            QStringLiteral("org.MprisMediaController.standalone"))) {
+    QDBusConnection bus = QDBusConnection::sessionBus();
+
+    if (!bus.isConnected()) {
+        qCritical() << "Impossibile connettersi al session bus D-Bus.";
+        return 1;
+    }
+
+    auto *busInterface = bus.interface();
+
+    if (!busInterface) {
+        qCritical() << "Interfaccia D-Bus non disponibile.";
+        return 1;
+    }
+
+    const QDBusReply<bool> registered =
+        busInterface->isServiceRegistered(kServiceName);
+
+    if (!registered.isValid()) {
+        qCritical() << "Errore durante il controllo del servizio D-Bus:"
+                    << registered.error().message();
+        return 1;
+    }
+
+    if (registered.value()) {
+        if (!toggle)
+            return 0;
+
         QDBusInterface controller(
-            QStringLiteral("org.MprisMediaController.standalone"),
-            QStringLiteral("/MediaController"),
-            QStringLiteral("org.MprisMediaController.standalone"),
-            QDBusConnection::sessionBus());
-        controller.call(QStringLiteral("toggleVisibility"));
+            kServiceName,
+            kObjectPath,
+            kServiceName,
+            bus);
+
+        if (!controller.isValid()) {
+            qCritical() << "Controller D-Bus non disponibile.";
+            return 1;
+        }
+
+        const QDBusReply<void> reply =
+            controller.call(QStringLiteral("toggleVisibility"));
+
+        if (!reply.isValid()) {
+            qCritical() << "Errore durante il comando toggle:"
+                        << reply.error().message();
+            return 1;
+        }
+
         return 0;
     }
 
-    QDBusConnection::sessionBus().registerService(
-        QStringLiteral("org.MprisMediaController.standalone"));
+    if (toggle) {
+        // Nessuna istanza attiva: avviamo normalmente il programma.
+    }
+
+    const QDBusReply<void> registration =
+        busInterface->registerService(kServiceName);
+
+    if (!registration.isValid()) {
+        qCritical() << "Impossibile registrare il servizio D-Bus:"
+                    << registration.error().message();
+        return 1;
+    }
 
     MediaController controller;
     controller.show();
