@@ -31,6 +31,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QVariantMap>
+#include <QDebug>
 
 namespace {
 
