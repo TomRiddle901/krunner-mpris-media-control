@@ -373,6 +373,8 @@ void MediaController::refreshPlayers()
     if (selectedIndex < 0 && m_playerSelector->count() > 0) selectedIndex = 0;
 
     if (selectedIndex >= 0) m_playerSelector->setCurrentIndex(selectedIndex);
+
+    m_playerSelector->blockSignals(false);
 }
 
 void MediaController::refreshCurrentPlayer()
