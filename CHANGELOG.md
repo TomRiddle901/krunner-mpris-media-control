@@ -10,7 +10,6 @@ All notable changes to this project are documented in this file.
 
 - Window-local keyboard shortcuts:
   - `Ctrl+Q` to quit the application.
-  - `Ctrl+M` to show or hide the controller.
   - `Space` to toggle play/pause.
   - `Ctrl+Right` to play the next track.
   - `Ctrl+Left` to play the previous track.
@@ -18,8 +17,8 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
-- Playback shortcuts do not interfere with the player selector, playback slider
-  or playback buttons when one of them has focus.
+- Playback shortcuts are handled at window level, independently of which
+  controller widget has focus.
 - Documented that these shortcuts work only while the controller window is
   active; `Alt+M` remains the KDE custom shortcut for showing it.
 

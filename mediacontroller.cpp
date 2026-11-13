@@ -284,58 +284,49 @@ MediaController::MediaController(QWidget *parent)
     connect(quitShortcut, &QShortcut::activated,
             qApp, &QApplication::quit);
 
-    // Verifica se il focus si trova su un controllo interattivo.
-    auto isControlFocused = [this]() {
-        QWidget *focus = QApplication::focusWidget();
-
-        return focus == m_playerSelector ||
-               focus == m_positionSlider ||
-               focus == m_previousButton ||
-               focus == m_playPauseButton ||
-               focus == m_nextButton;
-    };
-
     // Play / Pause con Spazio.
     auto *playPauseShortcut =
         new QShortcut(QKeySequence(Qt::Key_Space), this);
 
-    connect(playPauseShortcut, &QShortcut::activated, this, [this, isControlFocused]() {
-        if (!isControlFocused())
-            callPlayer(QStringLiteral("PlayPause"));
+    playPauseShortcut->setContext(Qt::WindowShortcut);
+
+    connect(playPauseShortcut, &QShortcut::activated,
+            this, [this]() {
+                callPlayer(QStringLiteral("PlayPause"));
     });
 
     // Brano successivo.
     auto *nextShortcut =
         new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Right), this);
 
-    connect(nextShortcut, &QShortcut::activated, this, [this, isControlFocused]() {
-        if (!isControlFocused())
-            callPlayer(QStringLiteral("Next"));
+    nextShortcut->setContext(Qt::WindowShortcut);
+
+    connect(nextShortcut, &QShortcut::activated,
+            this, [this]() {
+                callPlayer(QStringLiteral("Next"));
     });
 
     // Brano precedente.
     auto *previousShortcut =
         new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Left), this);
 
-    connect(previousShortcut, &QShortcut::activated, this, [this, isControlFocused]() {
-        if (!isControlFocused())
-            callPlayer(QStringLiteral("Previous"));
+    previousShortcut->setContext(Qt::WindowShortcut);
+
+    connect(previousShortcut, &QShortcut::activated,
+            this, [this]() {
+                callPlayer(QStringLiteral("Previous"));
     });
 
     // Nasconde il controller nella tray.
     auto *escapeShortcut =
         new QShortcut(QKeySequence(Qt::Key_Escape), this);
 
-    connect(escapeShortcut, &QShortcut::activated, this, [this]() {
-        hide();
+    escapeShortcut->setContext(Qt::WindowShortcut);
+
+    connect(escapeShortcut, &QShortcut::activated,
+            this, [this]() {
+                hide();
     });
-
-    // Mostra o nasconde il controller.
-    auto *toggleShortcut =
-        new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_M), this);
-
-    connect(toggleShortcut, &QShortcut::activated,
-            this, &MediaController::toggleVisibility);
 
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_QuitOnClose, false);
