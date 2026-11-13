@@ -10,6 +10,7 @@ All notable changes to this project are documented in this file.
 
 - Window-local keyboard shortcuts:
   - `Ctrl+Q` to quit the application.
+  - `Ctrl+R` to refresh players and metadata.
   - `Space` to toggle play/pause.
   - `Ctrl+Right` to play the next track.
   - `Ctrl+Left` to play the previous track.

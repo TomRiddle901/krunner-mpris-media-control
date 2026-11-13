@@ -83,6 +83,7 @@ When the controller window is active, the following shortcuts are available:
 | Shortcut | Function |
 | --- | --- |
 | `Ctrl + Q` | Quit the application |
+| `Ctrl + R` | Refresh players and metadata |
 | `Space` | Play / pause |
 | `Ctrl + Right` | Next track |
 | `Ctrl + Left` | Previous track |
@@ -90,6 +91,9 @@ When the controller window is active, the following shortcuts are available:
 
 These shortcuts only work while the controller window is active, not when it is
 hidden in the system tray.
+
+`Ctrl + R` forces an immediate refresh; player and metadata information is also
+updated automatically every 500 ms.
 
 The controller remains active in the system tray while its popup is hidden.
 

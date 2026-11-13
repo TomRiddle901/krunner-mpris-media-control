@@ -284,6 +284,15 @@ MediaController::MediaController(QWidget *parent)
     connect(quitShortcut, &QShortcut::activated,
             qApp, &QApplication::quit);
 
+    // Aggiorna manualmente lettori e metadati.
+    auto *refreshShortcut =
+        new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_R), this);
+
+    refreshShortcut->setContext(Qt::WindowShortcut);
+
+    connect(refreshShortcut, &QShortcut::activated,
+            this, &MediaController::refreshCurrentPlayer);
+
     // Play / Pause con Spazio.
     auto *playPauseShortcut =
         new QShortcut(QKeySequence(Qt::Key_Space), this);
