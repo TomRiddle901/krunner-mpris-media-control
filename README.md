@@ -83,6 +83,7 @@ When the controller window is active, the following shortcuts are available:
 | Shortcut | Function |
 | --- | --- |
 | `Ctrl + Q` | Quit the application |
+| `Ctrl + M` | Show / hide the controller |
 | `Space` | Play / pause |
 | `Ctrl + Right` | Next track |
 | `Ctrl + Left` | Previous track |

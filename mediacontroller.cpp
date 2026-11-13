@@ -330,6 +330,13 @@ MediaController::MediaController(QWidget *parent)
         hide();
     });
 
+    // Mostra o nasconde il controller.
+    auto *toggleShortcut =
+        new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_M), this);
+
+    connect(toggleShortcut, &QShortcut::activated,
+            this, &MediaController::toggleVisibility);
+
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_QuitOnClose, false);
     resize(620, 380);
