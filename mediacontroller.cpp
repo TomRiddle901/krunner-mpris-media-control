@@ -584,7 +584,8 @@ void MediaController::seekTo(int position)
     if (m_updatingSlider)
         return;
 
-    QDBusInterface player(currentService(), kRootPath, kPlayerInterface,
+    const QString service = currentService();
+    QDBusInterface player(service, kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
     const qint64 duration = dbusInteger(data.value("mpris:length"));
