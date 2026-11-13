@@ -20,7 +20,6 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QMenu>
-#include <QPalette>
 #include <QPixmap>
 #include <QPushButton>
 #include <QProcess>
@@ -289,11 +288,6 @@ MediaController::MediaController(QWidget *parent)
     m_playerSelector = new QComboBox(central);
     m_titleLabel = new QLabel(central);
     m_artistLabel = new QLabel(central);
-    qWarning() << "LABEL VISIBILE:" << m_artistLabel->isVisible();
-    qWarning() << "LABEL DIMENSIONI:" << m_artistLabel->size();
-    qWarning() << "LABEL STILE:" << m_artistLabel->styleSheet();
-    qWarning() << "LABEL COLORE:"
-               << m_artistLabel->palette().color(QPalette::WindowText);
     m_technicalLabel = new QLabel(central);
     m_artworkLabel = new QLabel(central);
     m_timeLabel = new QLabel(central);
@@ -313,7 +307,9 @@ MediaController::MediaController(QWidget *parent)
     m_playerSelector->setMaximumWidth(240);
     m_timeLabel->setAlignment(Qt::AlignCenter);
     m_titleLabel->setStyleSheet(QStringLiteral("font-size: 18px; font-weight: 600;"));
-    m_artistLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    m_artistLabel->setStyleSheet(
+        QStringLiteral("color: palette(text);"));
+    m_artistLabel->setWordWrap(true);
     m_technicalLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
     m_positionSlider->setRange(0, 1000);
 
@@ -378,9 +374,6 @@ MediaController::MediaController(QWidget *parent)
 
 bool MediaController::event(QEvent *event)
 {
-    if (event->type() == QEvent::WindowDeactivate && isVisible())
-        hide();
-
     return QMainWindow::event(event);
 }
 
@@ -426,8 +419,6 @@ void MediaController::refreshCurrentPlayer()
 
 void MediaController::updatePlayerView()
 {
-    qWarning() << "DEBUG: updatePlayerView() ESEGUITA";
-
     const QString service = currentService();
 
 
@@ -447,22 +438,11 @@ void MediaController::updatePlayerView()
     QDBusInterface player(service, kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
-    qWarning() << "MPRIS SERVICE:" << service;
-    qWarning() << "METADATA KEYS:" << data.keys();
-
-    for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
-        qWarning() << it.key()
-                   << "type:" << it.value().typeName()
-                   << "value:" << it.value();
-    }
-
     const QString status = player.property("PlaybackStatus").toString();
     const qint64 position = playerPosition(player);
     const qint64 duration = dbusInteger(data.value("mpris:length"));
     QString artist = firstString(data.value("xesam:artist"));
     QString album = firstString(data.value("xesam:album"));
-    qWarning() << "ARTIST ESTRATTO:" << artist;
-    qWarning() << "ALBUM ESTRATTO:" << album;
 
     if (artist.isEmpty())
         artist = firstString(data.value("xesam:albumArtist"));
@@ -481,8 +461,6 @@ void MediaController::updatePlayerView()
             artist + QStringLiteral(" · ") + album);
     else
         m_artistLabel->setText(artist.isEmpty() ? album : artist);
-    if (!artist.isEmpty() && !album.isEmpty())
-        qWarning() << "TESTO ETICHETTA:" << m_artistLabel->text();
     m_technicalLabel->setText(technicalMetadata(data));
     updateArtwork(data);
     m_playPauseButton->setText(status == QStringLiteral("Playing")
