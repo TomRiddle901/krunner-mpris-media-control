@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2.1.0] - 2026-11-13
+
+### Added
+
+- Improved MPRIS metadata handling through the standard `GetAll` D-Bus call.
+- Fallback metadata extraction from local media files when player metadata is incomplete.
+
+### Changed
+
+- Prefer Elisa when multiple MPRIS players are available and no player is selected.
+- Refresh player data immediately when the controller window is activated.
+- Preserve the tray-resident background behavior when the controller loses focus.
+- Improved artist and album label readability with theme-aware text color and wrapping.
+
+### Fixed
+
+- Restored player selector signals after refreshing the available players.
+- Preserved the selected player across periodic player list refreshes.
+
 ## [2.0.0] - 2026-11-06
 
 ### Changed

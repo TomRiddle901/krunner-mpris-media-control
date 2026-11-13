@@ -31,6 +31,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QVariantMap>
+#include <QDebug>
 
 namespace {
 
@@ -47,30 +48,64 @@ QVariant unwrapDbusValue(const QVariant &value)
     return value;
 }
 
+
 QVariantMap metadata(const QDBusInterface &player)
 {
-    QDBusInterface properties(player.service(), kPropertiesPath,
-                              kPropertiesInterface,
-                              QDBusConnection::sessionBus());
-    const QDBusReply<QDBusVariant> reply =
-        properties.call(QStringLiteral("Get"),
-                        QString::fromLatin1(kPlayerInterface),
-                        QStringLiteral("Metadata"));
+    QDBusInterface properties(
+        player.service(),
+        kPropertiesPath,
+        kPropertiesInterface,
+        QDBusConnection::sessionBus());
 
-    if (!reply.isValid())
+    // Recuperiamo tutte le proprietà dell'interfaccia Player.
+    const QDBusReply<QVariantMap> reply =
+        properties.call(
+            QStringLiteral("GetAll"),
+            QString::fromLatin1(kPlayerInterface));
+
+    if (!reply.isValid()) {
+        qWarning() << "Errore nella lettura delle proprietà MPRIS:"
+                   << reply.error().message();
         return {};
+    }
 
-    const QVariant value = unwrapDbusValue(reply.value().variant());
+    // Estraiamo la proprietà Metadata.
+    QVariant value =
+        reply.value().value(QStringLiteral("Metadata"));
+
+    if (!value.isValid()) {
+        qWarning() << "La proprietà Metadata non è disponibile per:"
+                   << player.service();
+        return {};
+    }
+
+    // Rimuoviamo eventuali contenitori D-Bus.
+    while (value.userType() == qMetaTypeId<QDBusVariant>()) {
+        value = value.value<QDBusVariant>().variant();
+    }
+
+    // Proviamo a convertire direttamente in QVariantMap.
     if (value.canConvert<QVariantMap>()) {
         const QVariantMap map = value.toMap();
+
         if (!map.isEmpty())
             return map;
     }
 
+    // Gestiamo anche i dati ricevuti come QDBusArgument.
     if (value.userType() == qMetaTypeId<QDBusArgument>()) {
-        QDBusArgument argument = value.value<QDBusArgument>();
-        return qdbus_cast<QVariantMap>(argument);
+        const QDBusArgument argument =
+            value.value<QDBusArgument>();
+
+        const QVariantMap map =
+            qdbus_cast<QVariantMap>(argument);
+
+        if (!map.isEmpty())
+            return map;
     }
+
+    qWarning() << "Formato Metadata non riconosciuto:"
+               << value.typeName();
 
     return {};
 }
@@ -272,7 +307,9 @@ MediaController::MediaController(QWidget *parent)
     m_playerSelector->setMaximumWidth(240);
     m_timeLabel->setAlignment(Qt::AlignCenter);
     m_titleLabel->setStyleSheet(QStringLiteral("font-size: 18px; font-weight: 600;"));
-    m_artistLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    m_artistLabel->setStyleSheet(
+        QStringLiteral("color: palette(text);"));
+    m_artistLabel->setWordWrap(true);
     m_technicalLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
     m_positionSlider->setRange(0, 1000);
 
@@ -337,10 +374,15 @@ MediaController::MediaController(QWidget *parent)
 
 bool MediaController::event(QEvent *event)
 {
+    const bool result = QMainWindow::event(event);
+
     if (event->type() == QEvent::WindowDeactivate && isVisible())
         hide();
 
-    return QMainWindow::event(event);
+    if (event->type() == QEvent::WindowActivate)
+        refreshCurrentPlayer();
+
+    return result;
 }
 
 QString MediaController::currentService() const
@@ -362,11 +404,17 @@ void MediaController::refreshPlayers()
         m_playerSelector->addItem(playerIcon(service), name, service);
     }
 
-    const int selectedIndex = m_playerSelector->findData(selected);
-    if (selectedIndex >= 0)
-        m_playerSelector->setCurrentIndex(selectedIndex);
-    else if (m_playerSelector->count() > 0)
-        m_playerSelector->setCurrentIndex(0);
+    int selectedIndex = m_playerSelector->findData(selected);
+
+    // Se non abbiamo ancora un lettore selezionato, preferiamo Elisa.
+    if (selectedIndex < 0) {
+        selectedIndex = m_playerSelector->findData(QStringLiteral("org.mpris.MediaPlayer2.elisa"));
+    }
+
+    // Se Elisa non è disponibile, scegliamo il primo lettore trovato.
+    if (selectedIndex < 0 && m_playerSelector->count() > 0) selectedIndex = 0;
+
+    if (selectedIndex >= 0) m_playerSelector->setCurrentIndex(selectedIndex);
 
     m_playerSelector->blockSignals(false);
 }
@@ -380,6 +428,7 @@ void MediaController::refreshCurrentPlayer()
 void MediaController::updatePlayerView()
 {
     const QString service = currentService();
+
 
     if (service.isEmpty()) {
         m_titleLabel->setText(QStringLiteral("No MPRIS player found"));
