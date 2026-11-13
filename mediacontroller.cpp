@@ -24,6 +24,7 @@
 #include <QPushButton>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QShortcut>
 #include <QSlider>
 #include <QSystemTrayIcon>
 #include <QTimer>
@@ -276,6 +277,12 @@ MediaController::MediaController(QWidget *parent)
         QDBusConnection::ExportScriptableSlots);
 
     setWindowTitle(QStringLiteral("MPRIS Media Controller"));
+    // Scorciatoia per terminare completamente il programma.
+    auto *quitShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Q), this);
+
+    connect(quitShortcut, &QShortcut::activated,
+            qApp, &QApplication::quit);
+
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_QuitOnClose, false);
     resize(620, 380);
