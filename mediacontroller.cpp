@@ -20,6 +20,7 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QMenu>
+#include <QPalette>
 #include <QPixmap>
 #include <QPushButton>
 #include <QProcess>
@@ -288,6 +289,11 @@ MediaController::MediaController(QWidget *parent)
     m_playerSelector = new QComboBox(central);
     m_titleLabel = new QLabel(central);
     m_artistLabel = new QLabel(central);
+    qWarning() << "LABEL VISIBILE:" << m_artistLabel->isVisible();
+    qWarning() << "LABEL DIMENSIONI:" << m_artistLabel->size();
+    qWarning() << "LABEL STILE:" << m_artistLabel->styleSheet();
+    qWarning() << "LABEL COLORE:"
+               << m_artistLabel->palette().color(QPalette::WindowText);
     m_technicalLabel = new QLabel(central);
     m_artworkLabel = new QLabel(central);
     m_timeLabel = new QLabel(central);
