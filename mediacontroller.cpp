@@ -420,6 +420,8 @@ void MediaController::refreshCurrentPlayer()
 
 void MediaController::updatePlayerView()
 {
+    qWarning() << "DEBUG: updatePlayerView() ESEGUITA";
+
     const QString service = currentService();
 
 
