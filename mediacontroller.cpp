@@ -441,13 +441,13 @@ void MediaController::updatePlayerView()
     QDBusInterface player(service, kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
-    qDebug() << "MPRIS SERVICE:" << service;
-    qDebug() << "METADATA KEYS:" << data.keys();
+    qWarning() << "MPRIS SERVICE:" << service;
+    qWarning() << "METADATA KEYS:" << data.keys();
 
     for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
-        qDebug() << it.key()
-                 << "type:" << it.value().typeName()
-                 << "value:" << it.value();
+        qWarning() << it.key()
+                   << "type:" << it.value().typeName()
+                   << "value:" << it.value();
     }
 
     const QString status = player.property("PlaybackStatus").toString();
