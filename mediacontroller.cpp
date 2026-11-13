@@ -18,6 +18,7 @@
 #include <QIcon>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
 #include <QPixmap>
@@ -282,6 +283,52 @@ MediaController::MediaController(QWidget *parent)
 
     connect(quitShortcut, &QShortcut::activated,
             qApp, &QApplication::quit);
+
+    // Verifica se il focus si trova su un controllo interattivo.
+    auto isControlFocused = [this]() {
+        QWidget *focus = QApplication::focusWidget();
+
+        return focus == m_playerSelector ||
+               focus == m_positionSlider ||
+               focus == m_previousButton ||
+               focus == m_playPauseButton ||
+               focus == m_nextButton;
+    };
+
+    // Play / Pause con Spazio.
+    auto *playPauseShortcut =
+        new QShortcut(QKeySequence(Qt::Key_Space), this);
+
+    connect(playPauseShortcut, &QShortcut::activated, this, [this, isControlFocused]() {
+        if (!isControlFocused())
+            callPlayer(QStringLiteral("PlayPause"));
+    });
+
+    // Brano successivo.
+    auto *nextShortcut =
+        new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Right), this);
+
+    connect(nextShortcut, &QShortcut::activated, this, [this, isControlFocused]() {
+        if (!isControlFocused())
+            callPlayer(QStringLiteral("Next"));
+    });
+
+    // Brano precedente.
+    auto *previousShortcut =
+        new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Left), this);
+
+    connect(previousShortcut, &QShortcut::activated, this, [this, isControlFocused]() {
+        if (!isControlFocused())
+            callPlayer(QStringLiteral("Previous"));
+    });
+
+    // Nasconde il controller nella tray.
+    auto *escapeShortcut =
+        new QShortcut(QKeySequence(Qt::Key_Escape), this);
+
+    connect(escapeShortcut, &QShortcut::activated, this, [this]() {
+        hide();
+    });
 
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_QuitOnClose, false);

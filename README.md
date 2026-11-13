@@ -78,6 +78,19 @@ The `--toggle` command can be assigned to a KDE custom shortcut, for example:
 Alt + M
 ```
 
+When the controller window is active, the following shortcuts are available:
+
+| Shortcut | Function |
+| --- | --- |
+| `Ctrl + Q` | Quit the application |
+| `Space` | Play / pause |
+| `Ctrl + Right` | Next track |
+| `Ctrl + Left` | Previous track |
+| `Esc` | Hide the controller |
+
+These shortcuts only work while the controller window is active, not when it is
+hidden in the system tray.
+
 The controller remains active in the system tray while its popup is hidden.
 
 ## MPRIS
