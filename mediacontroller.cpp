@@ -477,15 +477,6 @@ void MediaController::updatePlayerView()
     m_playPauseButton->setEnabled(true);
     m_previousButton->setEnabled(true);
     m_nextButton->setEnabled(true);
-
-    qDebug() << "MPRIS SERVICE:" << service;
-    qDebug() << "METADATA KEYS:" << data.keys();
-
-    for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
-        qDebug() << it.key()
-                << "type:" << it.value().typeName()
-                << "value:" << it.value();
-    }
 }
 
 QString MediaController::technicalMetadata(const QVariantMap &data) const
@@ -608,6 +599,15 @@ void MediaController::seekTo(int position)
             : QDBusObjectPath(trackId.toString());
     player.call(QStringLiteral("SetPosition"), path,
                 duration * position / 1000);
+    
+    qDebug() << "MPRIS SERVICE:" << service;
+    qDebug() << "METADATA KEYS:" << data.keys();
+
+    for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
+        qDebug() << it.key()
+                << "type:" << it.value().typeName()
+                << "value:" << it.value();
+    }
 }
 
 QString MediaController::formatTime(qint64 microseconds) const
