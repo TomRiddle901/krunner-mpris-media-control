@@ -374,7 +374,15 @@ MediaController::MediaController(QWidget *parent)
 
 bool MediaController::event(QEvent *event)
 {
-    return QMainWindow::event(event);
+    const bool result = QMainWindow::event(event);
+
+    if (event->type() == QEvent::WindowDeactivate && isVisible())
+        hide();
+
+    if (event->type() == QEvent::WindowActivate)
+        refreshCurrentPlayer();
+
+    return result;
 }
 
 QString MediaController::currentService() const
