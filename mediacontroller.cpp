@@ -422,6 +422,7 @@ void MediaController::updatePlayerView()
 {
     const QString service = currentService();
 
+
     if (service.isEmpty()) {
         m_titleLabel->setText(QStringLiteral("No MPRIS player found"));
         m_artistLabel->clear();
@@ -476,6 +477,15 @@ void MediaController::updatePlayerView()
     m_playPauseButton->setEnabled(true);
     m_previousButton->setEnabled(true);
     m_nextButton->setEnabled(true);
+
+    qDebug() << "MPRIS SERVICE:" << service;
+    qDebug() << "METADATA KEYS:" << data.keys();
+
+    for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
+        qDebug() << it.key()
+                << "type:" << it.value().typeName()
+                << "value:" << it.value();
+    }
 }
 
 QString MediaController::technicalMetadata(const QVariantMap &data) const
