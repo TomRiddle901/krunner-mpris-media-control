@@ -455,6 +455,8 @@ void MediaController::updatePlayerView()
     const qint64 duration = dbusInteger(data.value("mpris:length"));
     QString artist = firstString(data.value("xesam:artist"));
     QString album = firstString(data.value("xesam:album"));
+    qWarning() << "ARTIST ESTRATTO:" << artist;
+    qWarning() << "ALBUM ESTRATTO:" << album;
 
     if (artist.isEmpty())
         artist = firstString(data.value("xesam:albumArtist"));
@@ -473,6 +475,8 @@ void MediaController::updatePlayerView()
             artist + QStringLiteral(" · ") + album);
     else
         m_artistLabel->setText(artist.isEmpty() ? album : artist);
+    if (!artist.isEmpty() && !album.isEmpty())
+        qWarning() << "TESTO ETICHETTA:" << m_artistLabel->text();
     m_technicalLabel->setText(technicalMetadata(data));
     updateArtwork(data);
     m_playPauseButton->setText(status == QStringLiteral("Playing")
