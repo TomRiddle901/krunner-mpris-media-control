@@ -439,6 +439,15 @@ void MediaController::updatePlayerView()
     QDBusInterface player(service, kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
+    qDebug() << "MPRIS SERVICE:" << service;
+    qDebug() << "METADATA KEYS:" << data.keys();
+
+    for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
+        qDebug() << it.key()
+                 << "type:" << it.value().typeName()
+                 << "value:" << it.value();
+    }
+
     const QString status = player.property("PlaybackStatus").toString();
     const qint64 position = playerPosition(player);
     const qint64 duration = dbusInteger(data.value("mpris:length"));
@@ -584,8 +593,7 @@ void MediaController::seekTo(int position)
     if (m_updatingSlider)
         return;
 
-    const QString service = currentService();
-    QDBusInterface player(service, kRootPath, kPlayerInterface,
+    QDBusInterface player(currentService(), kRootPath, kPlayerInterface,
                           QDBusConnection::sessionBus());
     const QVariantMap data = metadata(player);
     const qint64 duration = dbusInteger(data.value("mpris:length"));
@@ -600,15 +608,6 @@ void MediaController::seekTo(int position)
             : QDBusObjectPath(trackId.toString());
     player.call(QStringLiteral("SetPosition"), path,
                 duration * position / 1000);
-    
-    qDebug() << "MPRIS SERVICE:" << service;
-    qDebug() << "METADATA KEYS:" << data.keys();
-
-    for (auto it = data.constBegin(); it != data.constEnd(); ++it) {
-        qDebug() << it.key()
-                << "type:" << it.value().typeName()
-                << "value:" << it.value();
-    }
 }
 
 QString MediaController::formatTime(qint64 microseconds) const
