@@ -22,6 +22,7 @@ Makefile
 # IDE
 .vscode/
 .idea/
+compileComands.txt
 
 # Temporary files
 *~
